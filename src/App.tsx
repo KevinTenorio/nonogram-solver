@@ -45,7 +45,9 @@ function App() {
 
     let somethingChangedBlocks = true;
     let firstUnblockedIndex = Math.min(
-      solvedLineMap.indexOf(null),
+      solvedLineMap.indexOf(null) !== -1
+        ? solvedLineMap.indexOf(null)
+        : gridSize + 1,
       solvedLineMap.indexOf(true)
     );
     let lastUnblockedIndex = Math.max(
@@ -79,7 +81,9 @@ function App() {
         }
       }
       firstUnblockedIndex = Math.min(
-        solvedLineMap.indexOf(null),
+        solvedLineMap.indexOf(null) !== -1
+          ? solvedLineMap.indexOf(null)
+          : gridSize + 1,
         solvedLineMap.indexOf(true)
       );
       lastUnblockedIndex = Math.max(
@@ -88,6 +92,102 @@ function App() {
       );
     }
 
+    // Fills from the edges if possible
+    let firstTrueIndex = solvedLineMap.indexOf(true);
+    let lastTrueIndex = solvedLineMap.lastIndexOf(true);
+    if (
+      firstTrueIndex !== -1 &&
+      firstTrueIndex - firstUnblockedIndex < infoForIndex[0]!
+    ) {
+      for (
+        let i = firstTrueIndex;
+        i < firstUnblockedIndex + infoForIndex[0]!;
+        i++
+      ) {
+        solvedLineMap[i] = true;
+      }
+    }
+    if (
+      lastTrueIndex !== -1 &&
+      lastUnblockedIndex - lastTrueIndex <
+        infoForIndex[infoForIndex.length - 1]!
+    ) {
+      for (
+        let i = lastTrueIndex;
+        i > lastUnblockedIndex - infoForIndex[infoForIndex.length - 1]!;
+        i--
+      ) {
+        solvedLineMap[i] = true;
+      }
+    }
+
+    // Blocks edges if possible
+    firstTrueIndex = solvedLineMap.indexOf(true);
+    lastTrueIndex = solvedLineMap.lastIndexOf(true);
+    if (firstTrueIndex !== -1) {
+      let currentLeftBlockSize = 0;
+      for (let i = firstTrueIndex; i < infoForIndex[0]! + firstTrueIndex; i++) {
+        if (solvedLineMap[i] === true) {
+          currentLeftBlockSize++;
+        } else {
+          break;
+        }
+      }
+      const leftBlockSizeMissing = infoForIndex[0]! - currentLeftBlockSize;
+      if (
+        leftBlockSizeMissing < firstTrueIndex - firstUnblockedIndex &&
+        firstTrueIndex - firstUnblockedIndex < infoForIndex[0]!
+      ) {
+        for (
+          let i = firstUnblockedIndex;
+          i < firstUnblockedIndex + leftBlockSizeMissing;
+          i++
+        ) {
+          solvedLineMap[i] = false;
+        }
+      }
+    }
+
+    if (lastTrueIndex !== -1) {
+      let currentRightBlockSize = 0;
+      for (
+        let i = lastTrueIndex;
+        i > lastTrueIndex - infoForIndex[infoForIndex.length - 1]!;
+        i--
+      ) {
+        if (solvedLineMap[i] === true) {
+          currentRightBlockSize++;
+        } else {
+          break;
+        }
+      }
+      const rightBlockSizeMissing =
+        infoForIndex[infoForIndex.length - 1]! - currentRightBlockSize;
+      if (
+        rightBlockSizeMissing < lastUnblockedIndex - lastTrueIndex &&
+        lastUnblockedIndex - lastTrueIndex <
+          infoForIndex[infoForIndex.length - 1]!
+      ) {
+        for (
+          let i = lastUnblockedIndex;
+          i > lastUnblockedIndex - rightBlockSizeMissing;
+          i--
+        ) {
+          solvedLineMap[i] = false;
+        }
+      }
+    }
+
+    firstUnblockedIndex = Math.min(
+      solvedLineMap.indexOf(null) !== -1
+        ? solvedLineMap.indexOf(null)
+        : gridSize + 1,
+      solvedLineMap.indexOf(true)
+    );
+    lastUnblockedIndex = Math.max(
+      solvedLineMap.lastIndexOf(null),
+      solvedLineMap.lastIndexOf(true)
+    );
     for (let i = 0; i < infoForIndex.length; i++) {
       const blockSize = infoForIndex[i];
       let blocksFilledToLeft =
@@ -621,7 +721,14 @@ function App() {
           setIsSolving(!isSolving);
         }}
       >
-        {isSolving ? "Stop" : "Solve"}
+        {isSolving ? "Stop" : "Solve All"}
+      </button>
+      <button
+        onClick={() => {
+          solve();
+        }}
+      >
+        {"Solve"}
       </button>
     </div>
   );
