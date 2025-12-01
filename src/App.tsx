@@ -136,11 +136,12 @@ function App() {
       const leftBlockSizeMissing = infoForIndex[0]! - currentLeftBlockSize;
       if (
         leftBlockSizeMissing < firstTrueIndex - firstUnblockedIndex &&
-        firstTrueIndex - firstUnblockedIndex < infoForIndex[0]!
+        (firstTrueIndex - firstUnblockedIndex < infoForIndex[0]! ||
+          infoForIndex.length === 1)
       ) {
         for (
           let i = firstUnblockedIndex;
-          i < firstUnblockedIndex + leftBlockSizeMissing;
+          i < firstTrueIndex - leftBlockSizeMissing;
           i++
         ) {
           solvedLineMap[i] = false;
@@ -165,12 +166,13 @@ function App() {
         infoForIndex[infoForIndex.length - 1]! - currentRightBlockSize;
       if (
         rightBlockSizeMissing < lastUnblockedIndex - lastTrueIndex &&
-        lastUnblockedIndex - lastTrueIndex <
-          infoForIndex[infoForIndex.length - 1]!
+        (lastUnblockedIndex - lastTrueIndex <
+          infoForIndex[infoForIndex.length - 1]! ||
+          infoForIndex.length === 1)
       ) {
         for (
           let i = lastUnblockedIndex;
-          i > lastUnblockedIndex - rightBlockSizeMissing;
+          i > lastTrueIndex + rightBlockSizeMissing;
           i--
         ) {
           solvedLineMap[i] = false;
