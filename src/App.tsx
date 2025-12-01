@@ -1,21 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 
-import {
-  rowInfoExample1,
-  columnInfoExample1,
-  gridMapExample1,
-} from "./example1";
-import {
-  rowInfoExample2,
-  columnInfoExample2,
-  gridMapExample2,
-} from "./example2";
-import {
-  rowInfoExample3,
-  columnInfoExample3,
-  gridMapExample3,
-} from "./example3";
+import example1 from "./example1.json";
+import example2 from "./example2.json";
+import example3 from "./example3.json";
 
 function App() {
   const [gridSize, setGridSize] = useState(0);
@@ -29,6 +17,7 @@ function App() {
   const [selectedBlockState, setSelectedBlockState] = useState<boolean | null>(
     true
   );
+  const [delay, setDelay] = useState<number>(25);
   const [isSolving, setIsSolving] = useState(false);
 
   const solve = useCallback(() => {
@@ -235,10 +224,18 @@ function App() {
       });
     };
 
-    const intervalId = setInterval(solveGrid, 50);
+    const intervalId = setInterval(solveGrid, delay);
 
     return () => clearInterval(intervalId);
-  }, [isSolving, gridSize, gridMap, selectedIndex, selectedDirection, solve]);
+  }, [
+    isSolving,
+    gridSize,
+    gridMap,
+    selectedIndex,
+    selectedDirection,
+    solve,
+    delay,
+  ]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -257,6 +254,15 @@ function App() {
         }}
         placeholder="Enter row size"
       />
+      <input
+        type="number"
+        value={delay > 0 ? delay : ""}
+        onChange={(e) => {
+          const delayValue = parseInt(e.target.value);
+          setDelay(delayValue);
+        }}
+        placeholder="Enter delay time (ms)"
+      />
       <button
         onClick={() =>
           setSelectedDirection(selectedDirection === "row" ? "column" : "row")
@@ -272,30 +278,33 @@ function App() {
       >
         <button
           onClick={() => {
-            setGridSize(gridMapExample1.length);
-            setRowInfo(rowInfoExample1);
-            setColumnInfo(columnInfoExample1);
-            setGridMap(gridMapExample1);
+            const example = { ...example1 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
           }}
         >
           Example 1
         </button>
         <button
           onClick={() => {
-            setGridSize(gridMapExample2.length);
-            setRowInfo(rowInfoExample2);
-            setColumnInfo(columnInfoExample2);
-            setGridMap(gridMapExample2);
+            const example = { ...example2 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
           }}
         >
           Example 2
         </button>
         <button
           onClick={() => {
-            setGridSize(gridMapExample3.length);
-            setRowInfo(rowInfoExample3);
-            setColumnInfo(columnInfoExample3);
-            setGridMap(gridMapExample3);
+            const example = { ...example3 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
           }}
         >
           Example 3
