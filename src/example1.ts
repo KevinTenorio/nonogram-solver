@@ -1,4 +1,4 @@
-export const columnInfoExample = [
+export const columnInfoExample1 = [
   [3, 2],
   [2, 2],
   [2, 1],
@@ -11,7 +11,7 @@ export const columnInfoExample = [
   [3, 2],
 ];
 
-export const rowInfoExample = [
+export const rowInfoExample1 = [
   [4],
   [2, 2],
   [2, 2, 2],
@@ -24,7 +24,7 @@ export const rowInfoExample = [
   [3, 2],
 ];
 
-export const gridMapExample = [
+export const gridMapExample1 = [
   [null, null, null, null, null, null, null, false, null, null],
   [false, false, null, null, null, null, null, null, false, null],
   [false, null, null, null, null, null, false, null, null, null],

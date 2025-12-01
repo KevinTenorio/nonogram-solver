@@ -1,7 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 
-import { rowInfoExample, columnInfoExample, gridMapExample } from "./example3";
+import {
+  rowInfoExample1,
+  columnInfoExample1,
+  gridMapExample1,
+} from "./example1";
+import {
+  rowInfoExample2,
+  columnInfoExample2,
+  gridMapExample2,
+} from "./example2";
+import {
+  rowInfoExample3,
+  columnInfoExample3,
+  gridMapExample3,
+} from "./example3";
 
 function App() {
   const [gridSize, setGridSize] = useState(0);
@@ -221,7 +235,7 @@ function App() {
       });
     };
 
-    const intervalId = setInterval(solveGrid, 150);
+    const intervalId = setInterval(solveGrid, 50);
 
     return () => clearInterval(intervalId);
   }, [isSolving, gridSize, gridMap, selectedIndex, selectedDirection, solve]);
@@ -250,16 +264,43 @@ function App() {
       >
         Flip Direction
       </button>
-      <button
-        onClick={() => {
-          setGridSize(gridMapExample.length);
-          setRowInfo(rowInfoExample);
-          setColumnInfo(columnInfoExample);
-          setGridMap(gridMapExample);
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
         }}
       >
-        Set Example
-      </button>
+        <button
+          onClick={() => {
+            setGridSize(gridMapExample1.length);
+            setRowInfo(rowInfoExample1);
+            setColumnInfo(columnInfoExample1);
+            setGridMap(gridMapExample1);
+          }}
+        >
+          Example 1
+        </button>
+        <button
+          onClick={() => {
+            setGridSize(gridMapExample2.length);
+            setRowInfo(rowInfoExample2);
+            setColumnInfo(columnInfoExample2);
+            setGridMap(gridMapExample2);
+          }}
+        >
+          Example 2
+        </button>
+        <button
+          onClick={() => {
+            setGridSize(gridMapExample3.length);
+            setRowInfo(rowInfoExample3);
+            setColumnInfo(columnInfoExample3);
+            setGridMap(gridMapExample3);
+          }}
+        >
+          Example 3
+        </button>
+      </div>
       <button
         onClick={() => {
           console.log({ rowInfo, columnInfo, gridMap });
