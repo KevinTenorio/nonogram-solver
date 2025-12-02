@@ -669,7 +669,7 @@ function App() {
 
     // Completes the line from the edges
     let currentBlockSize = 0;
-    let infoToSolve;
+    let infoToSolve = infoForIndex.find((n) => !n.isSolved);
     while (infoToSolve !== undefined) {
       // From the left edge
       currentBlockSize = 0;
@@ -678,7 +678,8 @@ function App() {
         break;
       }
       const startingIndex =
-        infoForIndex[infoForIndex.indexOf(infoToSolve) - 1]?.endIndex ?? -1 + 1;
+        (infoForIndex[infoForIndex.indexOf(infoToSolve) - 1]?.endIndex ?? -1) +
+        1;
       for (let i = startingIndex; i < gridSize; i++) {
         if (currentBlockSize >= infoToSolve.info!) {
           solveCellWithCheck(
@@ -690,10 +691,10 @@ function App() {
             selectedDirection,
             gridMap
           );
-          currentBlockSize = 0;
           infoToSolve.isSolved = true;
           infoToSolve.startIndex = i - currentBlockSize - 1;
           infoToSolve.endIndex = i - 1;
+          currentBlockSize = 0;
           break;
         }
         if (solvedLineMap[i] === null && currentBlockSize === 0) {
@@ -729,8 +730,8 @@ function App() {
         break;
       }
       const endingIndex =
-        infoForIndex[infoForIndex.indexOf(infoToSolve) + 1]?.startIndex ??
-        gridSize - 1;
+        (infoForIndex[infoForIndex.indexOf(infoToSolve) + 1]?.startIndex ??
+          gridSize) - 1;
       for (let i = endingIndex; i >= 0; i--) {
         if (currentBlockSize >= infoToSolve.info!) {
           solveCellWithCheck(
@@ -742,10 +743,10 @@ function App() {
             selectedDirection,
             gridMap
           );
-          currentBlockSize = 0;
           infoToSolve.isSolved = true;
           infoToSolve.startIndex = i + 1;
           infoToSolve.endIndex = i + currentBlockSize;
+          currentBlockSize = 0;
           break;
         }
         if (solvedLineMap[i] === null && currentBlockSize === 0) {
