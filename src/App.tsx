@@ -6,6 +6,7 @@ import easy2 from "./easy2.json";
 import medium1 from "./medium1.json";
 import medium2 from "./medium2.json";
 import hard1 from "./hard1.json";
+import hard2 from "./hard2.json";
 import specialist1 from "./specialist1.json";
 
 function App() {
@@ -451,6 +452,17 @@ function App() {
           }}
         >
           Hard 1
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...hard2 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Hard 2
         </button>
         <button
           onClick={() => {
