@@ -8,6 +8,7 @@ import medium2 from "./medium2.json";
 import hard1 from "./hard1.json";
 import hard2 from "./hard2.json";
 import specialist1 from "./specialist1.json";
+import specialist2 from "./specialist2.json";
 
 function App() {
   const [gridSize, setGridSize] = useState(0);
@@ -474,6 +475,17 @@ function App() {
           }}
         >
           Specialist 1
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...specialist2 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Specialist 2
         </button>
       </div>
       <button
