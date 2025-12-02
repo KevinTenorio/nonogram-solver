@@ -148,7 +148,6 @@ function App() {
         }
       }
     }
-
     if (lastTrueIndex !== -1) {
       let currentRightBlockSize = 0;
       for (
@@ -180,6 +179,22 @@ function App() {
       }
     }
 
+    // Blocks isolated empties at the edges
+    firstTrueIndex = solvedLineMap.indexOf(true);
+    lastTrueIndex = solvedLineMap.lastIndexOf(true);
+    const firstEmptyIndex = solvedLineMap.indexOf(null);
+    const lastEmptyIndex = solvedLineMap.lastIndexOf(null);
+    if (firstTrueIndex - firstEmptyIndex === infoForIndex[0]!) {
+      solvedLineMap[firstEmptyIndex] = false;
+    }
+    if (
+      lastEmptyIndex - lastTrueIndex ===
+      infoForIndex[infoForIndex.length - 1]!
+    ) {
+      solvedLineMap[lastEmptyIndex] = false;
+    }
+
+    // Main solving loop
     firstUnblockedIndex = Math.min(
       solvedLineMap.indexOf(null) !== -1
         ? solvedLineMap.indexOf(null)
