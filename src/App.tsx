@@ -20,7 +20,7 @@ const solveCellWithCheck = (
   selectedDirection: "row" | "column",
   gridMap: (boolean | null)[][]
 ) => {
-  if (index < 0) {
+  if (index < 0 || index >= solvedLineMap.length) {
     console.error({
       solvedLineMap,
       index,
@@ -417,6 +417,7 @@ function App() {
       startIndex: number;
       endIndex: number;
       isBlocked: boolean;
+      canMerge?: boolean;
     }[] = [];
     for (let i = 0; i < gridSize; i++) {
       if (solvedLineMap[i] === true) {
@@ -770,6 +771,65 @@ function App() {
             gridMap
           );
           currentBlockSize++;
+        }
+      }
+    }
+
+    // Solves unmergeble blocks
+    if (tempInfo.length > 0 && tempInfo.length === infoForIndex.length) {
+      for (let i = 1; i < tempInfo.length; i++) {
+        let canMerge = true;
+        const mergedBlockSize =
+          tempInfo[i - 1].count +
+          tempInfo[i].count +
+          tempInfo[i].startIndex -
+          tempInfo[i - 1].endIndex -
+          1;
+        if (mergedBlockSize > Math.max(...infoForIndex.map((n) => n.info!))) {
+          canMerge = false;
+        }
+        for (
+          let j = tempInfo[i - 1].endIndex;
+          j < tempInfo[i].startIndex;
+          j++
+        ) {
+          if (solvedLineMap[j] === false) {
+            canMerge = false;
+            break;
+          }
+        }
+        if (!canMerge) {
+          tempInfo[i - 1].canMerge = false;
+          tempInfo[i].canMerge = false;
+        }
+      }
+      for (let i = 0; i < tempInfo.length; i++) {
+        if (
+          tempInfo[i].canMerge === false &&
+          infoForIndex[i].info === tempInfo[i].count
+        ) {
+          infoForIndex[i].isSolved = true;
+          infoForIndex[i].startIndex = tempInfo[i].startIndex;
+          infoForIndex[i].endIndex = tempInfo[i].endIndex;
+          tempInfo[i].isBlocked = true;
+          solveCellWithCheck(
+            solvedLineMap,
+            tempInfo[i].startIndex - 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          solveCellWithCheck(
+            solvedLineMap,
+            tempInfo[i].endIndex + 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
         }
       }
     }
