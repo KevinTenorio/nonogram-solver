@@ -26,10 +26,15 @@ function App() {
   const [isSolving, setIsSolving] = useState(false);
 
   const solve = useCallback(() => {
-    const infoForIndex =
+    const infoForIndex: {
+      info: number | null;
+      isSolved: boolean;
+      startIndex?: number;
+      endIndex?: number;
+    }[] =
       selectedDirection === "row"
-        ? rowInfo[selectedIndex]
-        : columnInfo[selectedIndex];
+        ? rowInfo[selectedIndex].map((n) => ({ info: n, isSolved: false }))
+        : columnInfo[selectedIndex].map((n) => ({ info: n, isSolved: false }));
 
     const solvedLineMap: (boolean | null)[] = new Array(gridSize).fill(null);
     if (selectedDirection === "row") {
@@ -68,7 +73,10 @@ function App() {
         .slice(0, lastUnblockedIndex)
         .lastIndexOf(false);
 
-      if (firstBlockedIndex !== -1 && firstBlockedIndex < infoForIndex[0]!) {
+      if (
+        firstBlockedIndex !== -1 &&
+        firstBlockedIndex < infoForIndex[0].info!
+      ) {
         for (let i = 0; i <= firstBlockedIndex; i++) {
           if (solvedLineMap[i] === false) continue;
           solvedLineMap[i] = false;
@@ -77,7 +85,8 @@ function App() {
       }
       if (
         lastBlockedIndex !== -1 &&
-        gridSize - lastBlockedIndex - 1 < infoForIndex[infoForIndex.length - 1]!
+        gridSize - lastBlockedIndex - 1 <
+          infoForIndex[infoForIndex.length - 1].info!
       ) {
         for (let i = lastBlockedIndex; i < gridSize; i++) {
           if (solvedLineMap[i] === false) continue;
@@ -102,11 +111,11 @@ function App() {
     let lastTrueIndex = solvedLineMap.lastIndexOf(true);
     if (
       firstTrueIndex !== -1 &&
-      firstTrueIndex - firstUnblockedIndex < infoForIndex[0]!
+      firstTrueIndex - firstUnblockedIndex < infoForIndex[0].info!
     ) {
       for (
         let i = firstTrueIndex;
-        i < firstUnblockedIndex + infoForIndex[0]!;
+        i < firstUnblockedIndex + infoForIndex[0].info!;
         i++
       ) {
         solvedLineMap[i] = true;
@@ -115,11 +124,11 @@ function App() {
     if (
       lastTrueIndex !== -1 &&
       lastUnblockedIndex - lastTrueIndex <
-        infoForIndex[infoForIndex.length - 1]!
+        infoForIndex[infoForIndex.length - 1].info!
     ) {
       for (
         let i = lastTrueIndex;
-        i > lastUnblockedIndex - infoForIndex[infoForIndex.length - 1]!;
+        i > lastUnblockedIndex - infoForIndex[infoForIndex.length - 1].info!;
         i--
       ) {
         solvedLineMap[i] = true;
@@ -131,17 +140,21 @@ function App() {
     lastTrueIndex = solvedLineMap.lastIndexOf(true);
     if (firstTrueIndex !== -1) {
       let currentLeftBlockSize = 0;
-      for (let i = firstTrueIndex; i < infoForIndex[0]! + firstTrueIndex; i++) {
+      for (
+        let i = firstTrueIndex;
+        i < infoForIndex[0].info! + firstTrueIndex;
+        i++
+      ) {
         if (solvedLineMap[i] === true) {
           currentLeftBlockSize++;
         } else {
           break;
         }
       }
-      const leftBlockSizeMissing = infoForIndex[0]! - currentLeftBlockSize;
+      const leftBlockSizeMissing = infoForIndex[0].info! - currentLeftBlockSize;
       if (
         leftBlockSizeMissing < firstTrueIndex - firstUnblockedIndex &&
-        (firstTrueIndex - firstUnblockedIndex < infoForIndex[0]! ||
+        (firstTrueIndex - firstUnblockedIndex < infoForIndex[0].info! ||
           infoForIndex.length === 1)
       ) {
         for (
@@ -157,7 +170,7 @@ function App() {
       let currentRightBlockSize = 0;
       for (
         let i = lastTrueIndex;
-        i > lastTrueIndex - infoForIndex[infoForIndex.length - 1]!;
+        i > lastTrueIndex - infoForIndex[infoForIndex.length - 1].info!;
         i--
       ) {
         if (solvedLineMap[i] === true) {
@@ -167,11 +180,11 @@ function App() {
         }
       }
       const rightBlockSizeMissing =
-        infoForIndex[infoForIndex.length - 1]! - currentRightBlockSize;
+        infoForIndex[infoForIndex.length - 1].info! - currentRightBlockSize;
       if (
         rightBlockSizeMissing < lastUnblockedIndex - lastTrueIndex &&
         (lastUnblockedIndex - lastTrueIndex <
-          infoForIndex[infoForIndex.length - 1]! ||
+          infoForIndex[infoForIndex.length - 1].info! ||
           infoForIndex.length === 1)
       ) {
         for (
@@ -189,12 +202,12 @@ function App() {
     lastTrueIndex = solvedLineMap.lastIndexOf(true);
     const firstEmptyIndex = solvedLineMap.indexOf(null);
     const lastEmptyIndex = solvedLineMap.lastIndexOf(null);
-    if (firstTrueIndex - firstEmptyIndex === infoForIndex[0]!) {
+    if (firstTrueIndex - firstEmptyIndex === infoForIndex[0].info!) {
       solvedLineMap[firstEmptyIndex] = false;
     }
     if (
       lastEmptyIndex - lastTrueIndex ===
-      infoForIndex[infoForIndex.length - 1]!
+      infoForIndex[infoForIndex.length - 1].info!
     ) {
       solvedLineMap[lastEmptyIndex] = false;
     }
@@ -211,18 +224,18 @@ function App() {
       solvedLineMap.lastIndexOf(true)
     );
     for (let i = 0; i < infoForIndex.length; i++) {
-      const blockSize = infoForIndex[i];
+      const blockSize = infoForIndex[i].info!;
       let blocksFilledToLeft =
         firstUnblockedIndex !== -1 ? firstUnblockedIndex : 0;
       let blocksFilledToRight =
         lastUnblockedIndex !== -1 ? gridSize - 1 - lastUnblockedIndex : 0;
       for (let j = 0; j < i; j++) {
         blocksFilledToLeft +=
-          infoForIndex[j] !== null ? infoForIndex[j]! + 1 : 0;
+          infoForIndex[j] !== null ? infoForIndex[j].info! + 1 : 0;
       }
       for (let j = infoForIndex.length - 1; j > i; j--) {
         blocksFilledToRight +=
-          infoForIndex[j] !== null ? infoForIndex[j]! + 1 : 0;
+          infoForIndex[j] !== null ? infoForIndex[j].info! + 1 : 0;
       }
 
       for (
@@ -270,27 +283,52 @@ function App() {
     // Checks if every Info is satisfied
     let infoSatisfied = true;
     let count = 0;
-    const tempInfo: number[] = [];
+    const tempInfo: {
+      count: number;
+      startIndex: number;
+      endIndex: number;
+      isBlocked: boolean;
+    }[] = [];
     for (let i = 0; i < gridSize; i++) {
       if (solvedLineMap[i] === true) {
         count++;
       } else {
         if (count > 0) {
-          tempInfo.push(count);
+          tempInfo.push({
+            count,
+            startIndex: i - count,
+            endIndex: i - 1,
+            isBlocked: false,
+          });
           count = 0;
         }
       }
     }
     if (count > 0) {
-      tempInfo.push(count);
+      tempInfo.push({
+        count,
+        startIndex: gridSize - count,
+        endIndex: gridSize - 1,
+        isBlocked: false,
+      });
     }
     if (tempInfo.length !== infoForIndex.length) {
       infoSatisfied = false;
     } else {
       for (let i = 0; i < tempInfo.length; i++) {
-        if (tempInfo[i] !== infoForIndex[i]) {
+        if (tempInfo[i]?.count !== infoForIndex[i].info!) {
           infoSatisfied = false;
           break;
+        } else {
+          // Marks blocks as solved
+          const blockEndIndex = tempInfo[i].endIndex;
+          const blockStartIndex = tempInfo[i].startIndex;
+          if (blockEndIndex + 1 < gridSize) {
+            solvedLineMap[blockEndIndex + 1] = false;
+          }
+          if (blockStartIndex - 1 >= 0) {
+            solvedLineMap[blockStartIndex - 1] = false;
+          }
         }
       }
     }
@@ -302,6 +340,87 @@ function App() {
       }
     }
 
+    // Blocks surrounding of solved blocks
+    somethingChangedBlocks = true;
+    const auxInfo = [...tempInfo];
+    while (
+      somethingChangedBlocks &&
+      infoForIndex.filter((n) => !n.isSolved).length > 0 &&
+      auxInfo.length > 0
+    ) {
+      somethingChangedBlocks = false;
+      const biggestBlockSize = Math.max(
+        ...infoForIndex.filter((n) => !n.isSolved).map((n) => n.info!)
+      );
+      const biggestSolvedBlockSize = Math.max(...auxInfo.map((b) => b.count));
+      if (biggestBlockSize === biggestSolvedBlockSize) {
+        const solvedBlockTemp = auxInfo.find(
+          (b) => b.count === biggestBlockSize
+        );
+        const blockEndIndex = solvedBlockTemp!.endIndex;
+        const blockStartIndex = solvedBlockTemp!.startIndex;
+        if (blockEndIndex + 1 < gridSize) {
+          solvedLineMap[blockEndIndex + 1] = false;
+        }
+        if (blockStartIndex - 1 >= 0) {
+          solvedLineMap[blockStartIndex - 1] = false;
+        }
+        solvedBlockTemp!.isBlocked = true;
+
+        if (
+          infoForIndex.filter((n) => n.info === biggestBlockSize && !n.isSolved)
+            .length === 1 ||
+          infoForIndex.filter((n) => n.info === biggestBlockSize && !n.isSolved)
+            .length ===
+            auxInfo.filter((b) => b.count === biggestBlockSize).length
+        ) {
+          const solvedBlockIndex = infoForIndex.findIndex(
+            (n) => n.info === biggestBlockSize && !n.isSolved
+          );
+          infoForIndex[solvedBlockIndex].isSolved = true;
+          infoForIndex[solvedBlockIndex].startIndex =
+            solvedBlockTemp!.startIndex;
+          infoForIndex[solvedBlockIndex].endIndex = solvedBlockTemp!.endIndex;
+        }
+        somethingChangedBlocks = true;
+        auxInfo.splice(
+          auxInfo.findIndex((b) => b.count === biggestBlockSize),
+          1
+        );
+      }
+    }
+
+    // Blocks surrounding of solved blocks - final check
+    for (let i = 0; i < infoForIndex.length; i++) {
+      if (infoForIndex[i].isSolved) {
+        if (i === 0) {
+          for (let j = 0; j < infoForIndex[i].startIndex!; j++) {
+            if (solvedLineMap[j] === null) {
+              solvedLineMap[j] = false;
+            }
+          }
+        } else if (infoForIndex[i - 1].isSolved) {
+          for (
+            let j = infoForIndex[i - 1].endIndex! + 1;
+            j < infoForIndex[i].startIndex!;
+            j++
+          ) {
+            if (solvedLineMap[j] === null) {
+              solvedLineMap[j] = false;
+            }
+          }
+        }
+        if (i === infoForIndex.length - 1) {
+          for (let j = infoForIndex[i].endIndex! + 1; j < gridSize; j++) {
+            if (solvedLineMap[j] === null) {
+              solvedLineMap[j] = false;
+            }
+          }
+        }
+      }
+    }
+
+    // Updates the grid map with the solved line
     const newGridMap = [...gridMap];
     if (selectedDirection === "row") {
       for (let i = 0; i < gridSize; i++) {
