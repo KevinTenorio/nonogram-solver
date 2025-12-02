@@ -9,6 +9,7 @@ import hard1 from "./hard1.json";
 import hard2 from "./hard2.json";
 import specialist1 from "./specialist1.json";
 import specialist2 from "./specialist2.json";
+import specialist3 from "./specialist3.json";
 
 function App() {
   const [gridSize, setGridSize] = useState(0);
@@ -26,6 +27,7 @@ function App() {
   const [isSolving, setIsSolving] = useState(false);
 
   const solve = useCallback(() => {
+    // Initializes info for the selected line
     const infoForIndex: {
       info: number | null;
       isSolved: boolean;
@@ -52,7 +54,6 @@ function App() {
     if (!solvedLineMap.includes(null)) {
       return;
     }
-
     let somethingChangedBlocks = true;
     let firstUnblockedIndex = Math.min(
       solvedLineMap.indexOf(null) !== -1
@@ -340,7 +341,7 @@ function App() {
       }
     }
 
-    // Blocks surrounding of solved blocks
+    // Blocks neighbours of solved blocks
     somethingChangedBlocks = true;
     const auxInfo = [...tempInfo];
     while (
@@ -390,7 +391,7 @@ function App() {
       }
     }
 
-    // Blocks surrounding of solved blocks - final check
+    // Blocks surrounding of solved blocks
     for (let i = 0; i < infoForIndex.length; i++) {
       if (infoForIndex[i].isSolved) {
         if (i === 0) {
@@ -416,6 +417,52 @@ function App() {
               solvedLineMap[j] = false;
             }
           }
+        }
+      }
+    }
+
+    // Blocks empty spaces too small for remaining blocks
+    const smallestUnsolvedBlockSize = Math.min(
+      ...infoForIndex.filter((n) => !n.isSolved).map((n) => n.info!)
+    );
+    const emptySpaces: {
+      startIndex: number;
+      endIndex: number;
+      size: number;
+    }[] = [];
+    let countingEmpty = false;
+    let emptyStartIndex = 0;
+    for (let i = 0; i < gridSize; i++) {
+      if (
+        solvedLineMap[i] === null &&
+        (i === 0 || solvedLineMap[i - 1] === false)
+      ) {
+        if (!countingEmpty) {
+          countingEmpty = true;
+          emptyStartIndex = i;
+        }
+      } else if (solvedLineMap[i] === false) {
+        if (countingEmpty) {
+          countingEmpty = false;
+          emptySpaces.push({
+            startIndex: emptyStartIndex,
+            endIndex: i - 1,
+            size: i - emptyStartIndex,
+          });
+        }
+      }
+    }
+    if (countingEmpty) {
+      emptySpaces.push({
+        startIndex: emptyStartIndex,
+        endIndex: gridSize - 1,
+        size: gridSize - emptyStartIndex,
+      });
+    }
+    for (const space of emptySpaces) {
+      if (space.size < smallestUnsolvedBlockSize) {
+        for (let i = space.startIndex; i <= space.endIndex; i++) {
+          solvedLineMap[i] = false;
         }
       }
     }
@@ -605,6 +652,17 @@ function App() {
           }}
         >
           Specialist 2
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...specialist3 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Specialist 3
         </button>
       </div>
       <button
