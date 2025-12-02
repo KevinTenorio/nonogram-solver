@@ -11,6 +11,42 @@ import specialist1 from "./specialist1.json";
 import specialist2 from "./specialist2.json";
 import specialist3 from "./specialist3.json";
 
+const solveCellWithCheck = (
+  solvedLineMap: (boolean | null)[],
+  index: number,
+  state: boolean | null,
+  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
+  selectedIndex: number,
+  selectedDirection: "row" | "column",
+  gridMap: (boolean | null)[][]
+) => {
+  if (index < 0) {
+    console.error({
+      solvedLineMap,
+      index,
+      state,
+      selectedIndex,
+      selectedDirection,
+      gridMap,
+    });
+    return;
+  }
+  if (solvedLineMap[index] === null) {
+    solvedLineMap[index] = state;
+  } else if (solvedLineMap[index] !== state) {
+    console.error({
+      solvedLineMap,
+      index,
+      state,
+      selectedIndex,
+      selectedDirection,
+      gridMap,
+    });
+    setIsSolving(false);
+    throw new Error("Conflict in cell state");
+  }
+};
+
 function App() {
   const [gridSize, setGridSize] = useState(0);
   const [rowInfo, setRowInfo] = useState<(number | null)[][]>([]);
@@ -80,7 +116,15 @@ function App() {
       ) {
         for (let i = 0; i <= firstBlockedIndex; i++) {
           if (solvedLineMap[i] === false) continue;
-          solvedLineMap[i] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
           somethingChangedBlocks = true;
         }
       }
@@ -91,7 +135,15 @@ function App() {
       ) {
         for (let i = lastBlockedIndex; i < gridSize; i++) {
           if (solvedLineMap[i] === false) continue;
-          solvedLineMap[i] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
           somethingChangedBlocks = true;
         }
       }
@@ -119,7 +171,15 @@ function App() {
         i < firstUnblockedIndex + infoForIndex[0].info!;
         i++
       ) {
-        solvedLineMap[i] = true;
+        solveCellWithCheck(
+          solvedLineMap,
+          i,
+          true,
+          setIsSolving,
+          selectedIndex,
+          selectedDirection,
+          gridMap
+        );
       }
     }
     if (
@@ -132,7 +192,15 @@ function App() {
         i > lastUnblockedIndex - infoForIndex[infoForIndex.length - 1].info!;
         i--
       ) {
-        solvedLineMap[i] = true;
+        solveCellWithCheck(
+          solvedLineMap,
+          i,
+          true,
+          setIsSolving,
+          selectedIndex,
+          selectedDirection,
+          gridMap
+        );
       }
     }
 
@@ -163,7 +231,15 @@ function App() {
           i < firstTrueIndex - leftBlockSizeMissing;
           i++
         ) {
-          solvedLineMap[i] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
         }
       }
     }
@@ -193,7 +269,15 @@ function App() {
           i > lastTrueIndex + rightBlockSizeMissing;
           i--
         ) {
-          solvedLineMap[i] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
         }
       }
     }
@@ -203,14 +287,34 @@ function App() {
     lastTrueIndex = solvedLineMap.lastIndexOf(true);
     const firstEmptyIndex = solvedLineMap.indexOf(null);
     const lastEmptyIndex = solvedLineMap.lastIndexOf(null);
-    if (firstTrueIndex - firstEmptyIndex === infoForIndex[0].info!) {
-      solvedLineMap[firstEmptyIndex] = false;
+    if (
+      firstTrueIndex !== -1 &&
+      firstTrueIndex - firstEmptyIndex === infoForIndex[0].info!
+    ) {
+      solveCellWithCheck(
+        solvedLineMap,
+        firstEmptyIndex,
+        false,
+        setIsSolving,
+        selectedIndex,
+        selectedDirection,
+        gridMap
+      );
     }
     if (
+      lastTrueIndex !== -1 &&
       lastEmptyIndex - lastTrueIndex ===
-      infoForIndex[infoForIndex.length - 1].info!
+        infoForIndex[infoForIndex.length - 1].info!
     ) {
-      solvedLineMap[lastEmptyIndex] = false;
+      solveCellWithCheck(
+        solvedLineMap,
+        lastEmptyIndex,
+        false,
+        setIsSolving,
+        selectedIndex,
+        selectedDirection,
+        gridMap
+      );
     }
 
     // Main solving loop
@@ -270,13 +374,37 @@ function App() {
           k >= rightLeaningStartIndex;
           k--
         ) {
-          solvedLineMap[k] = true;
+          solveCellWithCheck(
+            solvedLineMap,
+            k,
+            true,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
         }
         if (leftLeaningEndIndex - rightLeaningStartIndex === blockSize!) {
           if (rightLeaningStartIndex - 1 >= 0)
-            solvedLineMap[rightLeaningStartIndex - 1] = false;
+            solveCellWithCheck(
+              solvedLineMap,
+              rightLeaningStartIndex - 1,
+              false,
+              setIsSolving,
+              selectedIndex,
+              selectedDirection,
+              gridMap
+            );
           if (leftLeaningEndIndex < gridSize)
-            solvedLineMap[leftLeaningEndIndex] = false;
+            solveCellWithCheck(
+              solvedLineMap,
+              leftLeaningEndIndex,
+              false,
+              setIsSolving,
+              selectedIndex,
+              selectedDirection,
+              gridMap
+            );
         }
       }
     }
@@ -325,10 +453,26 @@ function App() {
           const blockEndIndex = tempInfo[i].endIndex;
           const blockStartIndex = tempInfo[i].startIndex;
           if (blockEndIndex + 1 < gridSize) {
-            solvedLineMap[blockEndIndex + 1] = false;
+            solveCellWithCheck(
+              solvedLineMap,
+              blockEndIndex + 1,
+              false,
+              setIsSolving,
+              selectedIndex,
+              selectedDirection,
+              gridMap
+            );
           }
           if (blockStartIndex - 1 >= 0) {
-            solvedLineMap[blockStartIndex - 1] = false;
+            solveCellWithCheck(
+              solvedLineMap,
+              blockStartIndex - 1,
+              false,
+              setIsSolving,
+              selectedIndex,
+              selectedDirection,
+              gridMap
+            );
           }
         }
       }
@@ -336,7 +480,15 @@ function App() {
     if (infoSatisfied) {
       for (let i = 0; i < gridSize; i++) {
         if (solvedLineMap[i] === null) {
-          solvedLineMap[i] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
         }
       }
     }
@@ -361,10 +513,26 @@ function App() {
         const blockEndIndex = solvedBlockTemp!.endIndex;
         const blockStartIndex = solvedBlockTemp!.startIndex;
         if (blockEndIndex + 1 < gridSize) {
-          solvedLineMap[blockEndIndex + 1] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            blockEndIndex + 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
         }
         if (blockStartIndex - 1 >= 0) {
-          solvedLineMap[blockStartIndex - 1] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            blockStartIndex - 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
         }
         solvedBlockTemp!.isBlocked = true;
 
@@ -397,7 +565,15 @@ function App() {
         if (i === 0) {
           for (let j = 0; j < infoForIndex[i].startIndex!; j++) {
             if (solvedLineMap[j] === null) {
-              solvedLineMap[j] = false;
+              solveCellWithCheck(
+                solvedLineMap,
+                j,
+                false,
+                setIsSolving,
+                selectedIndex,
+                selectedDirection,
+                gridMap
+              );
             }
           }
         } else if (infoForIndex[i - 1].isSolved) {
@@ -407,14 +583,30 @@ function App() {
             j++
           ) {
             if (solvedLineMap[j] === null) {
-              solvedLineMap[j] = false;
+              solveCellWithCheck(
+                solvedLineMap,
+                j,
+                false,
+                setIsSolving,
+                selectedIndex,
+                selectedDirection,
+                gridMap
+              );
             }
           }
         }
         if (i === infoForIndex.length - 1) {
           for (let j = infoForIndex[i].endIndex! + 1; j < gridSize; j++) {
             if (solvedLineMap[j] === null) {
-              solvedLineMap[j] = false;
+              solveCellWithCheck(
+                solvedLineMap,
+                j,
+                false,
+                setIsSolving,
+                selectedIndex,
+                selectedDirection,
+                gridMap
+              );
             }
           }
         }
@@ -462,7 +654,121 @@ function App() {
     for (const space of emptySpaces) {
       if (space.size < smallestUnsolvedBlockSize) {
         for (let i = space.startIndex; i <= space.endIndex; i++) {
-          solvedLineMap[i] = false;
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
+      }
+    }
+
+    // Completes the line from the edges
+    let currentBlockSize = 0;
+    let infoToSolve;
+    while (infoToSolve !== undefined) {
+      // From the left edge
+      currentBlockSize = 0;
+      infoToSolve = infoForIndex.find((n) => !n.isSolved);
+      if (infoToSolve === undefined) {
+        break;
+      }
+      const startingIndex =
+        infoForIndex[infoForIndex.indexOf(infoToSolve) - 1]?.endIndex ?? -1 + 1;
+      for (let i = startingIndex; i < gridSize; i++) {
+        if (currentBlockSize >= infoToSolve.info!) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          currentBlockSize = 0;
+          infoToSolve.isSolved = true;
+          infoToSolve.startIndex = i - currentBlockSize - 1;
+          infoToSolve.endIndex = i - 1;
+          break;
+        }
+        if (solvedLineMap[i] === null && currentBlockSize === 0) {
+          infoToSolve = undefined;
+          break;
+        } else if (solvedLineMap[i] === true) {
+          currentBlockSize++;
+        } else if (solvedLineMap[i] === false) {
+          currentBlockSize = 0;
+        } else if (
+          solvedLineMap[i] === null &&
+          currentBlockSize < infoToSolve.info!
+        ) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            true,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          currentBlockSize++;
+        }
+      }
+      // From the right edge
+      currentBlockSize = 0;
+      infoToSolve =
+        infoForIndex.map((n) => n.isSolved).lastIndexOf(false) !== -1
+          ? infoForIndex[infoForIndex.map((n) => n.isSolved).lastIndexOf(false)]
+          : undefined;
+      if (infoToSolve === undefined) {
+        break;
+      }
+      const endingIndex =
+        infoForIndex[infoForIndex.indexOf(infoToSolve) + 1]?.startIndex ??
+        gridSize - 1;
+      for (let i = endingIndex; i >= 0; i--) {
+        if (currentBlockSize >= infoToSolve.info!) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          currentBlockSize = 0;
+          infoToSolve.isSolved = true;
+          infoToSolve.startIndex = i + 1;
+          infoToSolve.endIndex = i + currentBlockSize;
+          break;
+        }
+        if (solvedLineMap[i] === null && currentBlockSize === 0) {
+          infoToSolve = undefined;
+          break;
+        } else if (solvedLineMap[i] === true) {
+          currentBlockSize++;
+        } else if (solvedLineMap[i] === false) {
+          currentBlockSize = 0;
+        } else if (
+          solvedLineMap[i] === null &&
+          currentBlockSize < infoToSolve.info!
+        ) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            true,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          currentBlockSize++;
         }
       }
     }
@@ -568,6 +874,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...easy1 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -579,6 +887,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...easy2 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -590,6 +900,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...medium1 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -601,6 +913,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...medium2 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -612,6 +926,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...hard1 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -623,6 +939,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...hard2 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -634,6 +952,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...specialist1 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -645,6 +965,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...specialist2 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -656,6 +978,8 @@ function App() {
         <button
           onClick={() => {
             const example = { ...specialist3 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
@@ -774,7 +1098,7 @@ function App() {
         style={{
           display: "flex",
           flexDirection: "row",
-          justifyContent: "center",
+          justifyContent: "end",
         }}
       >
         <div
