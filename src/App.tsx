@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 
-import example1 from "./example1.json";
-import example2 from "./example2.json";
-import example3 from "./example3.json";
+import easy1 from "./easy1.json";
+import easy2 from "./easy2.json";
+import medium1 from "./medium1.json";
+import medium2 from "./medium2.json";
+import hard1 from "./hard1.json";
+import specialist1 from "./specialist1.json";
 
 function App() {
   const [gridSize, setGridSize] = useState(0);
@@ -391,40 +394,74 @@ function App() {
         style={{
           display: "flex",
           flexDirection: "row",
+          gap: "8px",
         }}
       >
         <button
           onClick={() => {
-            const example = { ...example1 };
+            const example = { ...easy1 };
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
             setGridMap(example.gridMap);
           }}
         >
-          Example 1
+          Easy 1
         </button>
         <button
           onClick={() => {
-            const example = { ...example2 };
+            const example = { ...easy2 };
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
             setGridMap(example.gridMap);
           }}
         >
-          Example 2
+          Easy 2
         </button>
         <button
           onClick={() => {
-            const example = { ...example3 };
+            const example = { ...medium1 };
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
             setGridMap(example.gridMap);
           }}
         >
-          Example 3
+          Medium 1
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...medium2 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Medium 2
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...hard1 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Hard 1
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...specialist1 };
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Specialist 1
         </button>
       </div>
       <button
