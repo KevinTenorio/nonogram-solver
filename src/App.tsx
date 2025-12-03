@@ -459,6 +459,7 @@ function App() {
       endIndex: number;
       isBlocked: boolean;
       canMerge?: boolean;
+      isEdge?: boolean;
     }[] = [];
     for (let i = 0; i < gridSize; i++) {
       if (solvedLineMap[i] === true) {
@@ -677,8 +678,8 @@ function App() {
       }
     }
 
-    // Solves unmergeble blocks
-    if (tempInfo.length > 0 && tempInfo.length === infoForIndex.length) {
+    // Solves unmergeble blocks and adds information to tempInfo
+    if (tempInfo.length > 0) {
       for (let i = 1; i < tempInfo.length; i++) {
         let canMerge = true;
         const mergedBlockSize =
@@ -708,6 +709,7 @@ function App() {
       for (let i = 0; i < tempInfo.length; i++) {
         if (
           tempInfo[i].canMerge === false &&
+          tempInfo.length === infoForIndex.length &&
           infoForIndex[i].info === tempInfo[i].count
         ) {
           infoForIndex[i].isSolved = true;
@@ -842,6 +844,9 @@ function App() {
         }
       }
     }
+
+    // Expands unsolved unmergeble blocks near the edges
+    console.log({ infoForIndex, tempInfo });
 
     // Solves missing blocks in unbroken empty spaces
     emptySpaces = calcEmptySpaces(solvedLineMap, gridSize);
