@@ -47,6 +47,47 @@ const solveCellWithCheck = (
   }
 };
 
+const calcEmptySpaces = (
+  solvedLineMap: (boolean | null)[],
+  gridSize: number
+) => {
+  const emptySpaces: {
+    startIndex: number;
+    endIndex: number;
+    size: number;
+  }[] = [];
+  let countingEmpty = false;
+  let emptyStartIndex = 0;
+  for (let i = 0; i < gridSize; i++) {
+    if (
+      solvedLineMap[i] === null &&
+      (i === 0 || solvedLineMap[i - 1] === false)
+    ) {
+      if (!countingEmpty) {
+        countingEmpty = true;
+        emptyStartIndex = i;
+      }
+    } else if (solvedLineMap[i] === false) {
+      if (countingEmpty) {
+        countingEmpty = false;
+        emptySpaces.push({
+          startIndex: emptyStartIndex,
+          endIndex: i - 1,
+          size: i - emptyStartIndex,
+        });
+      }
+    }
+  }
+  if (countingEmpty) {
+    emptySpaces.push({
+      startIndex: emptyStartIndex,
+      endIndex: gridSize - 1,
+      size: gridSize - emptyStartIndex,
+    });
+  }
+  return emptySpaces;
+};
+
 function App() {
   const [gridSize, setGridSize] = useState(0);
   const [rowInfo, setRowInfo] = useState<(number | null)[][]>([]);
@@ -618,46 +659,73 @@ function App() {
     const smallestUnsolvedBlockSize = Math.min(
       ...infoForIndex.filter((n) => !n.isSolved).map((n) => n.info!)
     );
-    const emptySpaces: {
-      startIndex: number;
-      endIndex: number;
-      size: number;
-    }[] = [];
-    let countingEmpty = false;
-    let emptyStartIndex = 0;
-    for (let i = 0; i < gridSize; i++) {
-      if (
-        solvedLineMap[i] === null &&
-        (i === 0 || solvedLineMap[i - 1] === false)
-      ) {
-        if (!countingEmpty) {
-          countingEmpty = true;
-          emptyStartIndex = i;
-        }
-      } else if (solvedLineMap[i] === false) {
-        if (countingEmpty) {
-          countingEmpty = false;
-          emptySpaces.push({
-            startIndex: emptyStartIndex,
-            endIndex: i - 1,
-            size: i - emptyStartIndex,
-          });
-        }
-      }
-    }
-    if (countingEmpty) {
-      emptySpaces.push({
-        startIndex: emptyStartIndex,
-        endIndex: gridSize - 1,
-        size: gridSize - emptyStartIndex,
-      });
-    }
+    let emptySpaces = calcEmptySpaces(solvedLineMap, gridSize);
+
     for (const space of emptySpaces) {
       if (space.size < smallestUnsolvedBlockSize) {
         for (let i = space.startIndex; i <= space.endIndex; i++) {
           solveCellWithCheck(
             solvedLineMap,
             i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
+      }
+    }
+
+    // Solves unmergeble blocks
+    if (tempInfo.length > 0 && tempInfo.length === infoForIndex.length) {
+      for (let i = 1; i < tempInfo.length; i++) {
+        let canMerge = true;
+        const mergedBlockSize =
+          tempInfo[i - 1].count +
+          tempInfo[i].count +
+          tempInfo[i].startIndex -
+          tempInfo[i - 1].endIndex -
+          1;
+        if (mergedBlockSize > Math.max(...infoForIndex.map((n) => n.info!))) {
+          canMerge = false;
+        }
+        for (
+          let j = tempInfo[i - 1].endIndex;
+          j < tempInfo[i].startIndex;
+          j++
+        ) {
+          if (solvedLineMap[j] === false) {
+            canMerge = false;
+            break;
+          }
+        }
+        if (!canMerge) {
+          tempInfo[i - 1].canMerge = false;
+          tempInfo[i].canMerge = false;
+        }
+      }
+      for (let i = 0; i < tempInfo.length; i++) {
+        if (
+          tempInfo[i].canMerge === false &&
+          infoForIndex[i].info === tempInfo[i].count
+        ) {
+          infoForIndex[i].isSolved = true;
+          infoForIndex[i].startIndex = tempInfo[i].startIndex;
+          infoForIndex[i].endIndex = tempInfo[i].endIndex;
+          tempInfo[i].isBlocked = true;
+          solveCellWithCheck(
+            solvedLineMap,
+            tempInfo[i].startIndex - 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          solveCellWithCheck(
+            solvedLineMap,
+            tempInfo[i].endIndex + 1,
             false,
             setIsSolving,
             selectedIndex,
@@ -693,7 +761,7 @@ function App() {
             gridMap
           );
           infoToSolve.isSolved = true;
-          infoToSolve.startIndex = i - currentBlockSize - 1;
+          infoToSolve.startIndex = i - currentBlockSize;
           infoToSolve.endIndex = i - 1;
           currentBlockSize = 0;
           break;
@@ -775,56 +843,21 @@ function App() {
       }
     }
 
-    // Solves unmergeble blocks
-    if (tempInfo.length > 0 && tempInfo.length === infoForIndex.length) {
-      for (let i = 1; i < tempInfo.length; i++) {
-        let canMerge = true;
-        const mergedBlockSize =
-          tempInfo[i - 1].count +
-          tempInfo[i].count +
-          tempInfo[i].startIndex -
-          tempInfo[i - 1].endIndex -
-          1;
-        if (mergedBlockSize > Math.max(...infoForIndex.map((n) => n.info!))) {
-          canMerge = false;
-        }
-        for (
-          let j = tempInfo[i - 1].endIndex;
-          j < tempInfo[i].startIndex;
-          j++
-        ) {
-          if (solvedLineMap[j] === false) {
-            canMerge = false;
-            break;
-          }
-        }
-        if (!canMerge) {
-          tempInfo[i - 1].canMerge = false;
-          tempInfo[i].canMerge = false;
-        }
-      }
-      for (let i = 0; i < tempInfo.length; i++) {
-        if (
-          tempInfo[i].canMerge === false &&
-          infoForIndex[i].info === tempInfo[i].count
-        ) {
-          infoForIndex[i].isSolved = true;
-          infoForIndex[i].startIndex = tempInfo[i].startIndex;
-          infoForIndex[i].endIndex = tempInfo[i].endIndex;
-          tempInfo[i].isBlocked = true;
+    // Solves missing blocks in unbroken empty spaces
+    emptySpaces = calcEmptySpaces(solvedLineMap, gridSize);
+    if (
+      infoForIndex.filter((n) => !n.isSolved).length === emptySpaces.length &&
+      !infoForIndex
+        .filter((n) => !n.isSolved)
+        ?.map((n) => n.info!)
+        .some((value, index) => value !== emptySpaces.map((n) => n.size)[index])
+    ) {
+      for (const space of emptySpaces) {
+        for (let i = space.startIndex; i <= space.endIndex; i++) {
           solveCellWithCheck(
             solvedLineMap,
-            tempInfo[i].startIndex - 1,
-            false,
-            setIsSolving,
-            selectedIndex,
-            selectedDirection,
-            gridMap
-          );
-          solveCellWithCheck(
-            solvedLineMap,
-            tempInfo[i].endIndex + 1,
-            false,
+            i,
+            true,
             setIsSolving,
             selectedIndex,
             selectedDirection,
