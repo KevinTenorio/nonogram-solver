@@ -110,6 +110,8 @@ function App() {
       isSolved: boolean;
       startIndex?: number;
       endIndex?: number;
+      startLimitIndex?: number;
+      endLimitIndex?: number;
     }[] =
       selectedDirection === "row"
         ? rowInfo[selectedIndex].map((n) => ({ info: n, isSolved: false }))
@@ -326,8 +328,8 @@ function App() {
     // Blocks isolated empties at the edges
     firstTrueIndex = solvedLineMap.indexOf(true);
     lastTrueIndex = solvedLineMap.lastIndexOf(true);
-    const firstEmptyIndex = solvedLineMap.indexOf(null);
-    const lastEmptyIndex = solvedLineMap.lastIndexOf(null);
+    let firstEmptyIndex = solvedLineMap.indexOf(null);
+    let lastEmptyIndex = solvedLineMap.lastIndexOf(null);
     if (
       firstTrueIndex !== -1 &&
       firstTrueIndex - firstEmptyIndex === infoForIndex[0].info!
@@ -405,7 +407,8 @@ function App() {
           j = gridSize - blocksFilledToRight - 1;
         }
       }
-
+      infoForIndex[i].startLimitIndex = blocksFilledToLeft;
+      infoForIndex[i].endLimitIndex = gridSize - blocksFilledToRight - 1;
       const leftLeaningEndIndex = blocksFilledToLeft + blockSize!;
       const rightLeaningStartIndex =
         gridSize - blocksFilledToRight - blockSize!;
@@ -459,7 +462,8 @@ function App() {
       endIndex: number;
       isBlocked: boolean;
       canMerge?: boolean;
-      isEdge?: boolean;
+      officialIndex?: number;
+      targetCount?: number;
     }[] = [];
     for (let i = 0; i < gridSize; i++) {
       if (solvedLineMap[i] === true) {
@@ -846,7 +850,88 @@ function App() {
     }
 
     // Expands unsolved unmergeble blocks near the edges
-    console.log({ infoForIndex, tempInfo });
+    if (tempInfo.length > 0) {
+      const firstTempBlock = tempInfo[0];
+      const firstInfoBlock = infoForIndex[0];
+      firstEmptyIndex = solvedLineMap.indexOf(null);
+      if (firstInfoBlock.info! > firstTempBlock.startIndex - firstEmptyIndex) {
+        firstTempBlock.officialIndex = 0;
+        firstTempBlock.targetCount = firstInfoBlock.info!;
+      }
+      const lastTempBlock = tempInfo[tempInfo.length - 1];
+      const lastInfoBlock = infoForIndex[infoForIndex.length - 1];
+      lastEmptyIndex = solvedLineMap.lastIndexOf(null);
+      if (lastInfoBlock.info! > lastEmptyIndex - lastTempBlock.endIndex) {
+        lastTempBlock.officialIndex = infoForIndex.length - 1;
+        lastTempBlock.targetCount = lastInfoBlock.info!;
+      }
+      const unmatchedInfos = infoForIndex.filter(
+        (_, index) => !tempInfo.some((block) => block.officialIndex === index)
+      );
+      if (
+        firstTempBlock.targetCount !== undefined &&
+        tempInfo[1] &&
+        tempInfo[1].endIndex - firstTempBlock.startIndex >
+          firstTempBlock.targetCount &&
+        !unmatchedInfos.some(
+          (n) => n.info! <= tempInfo[1].endIndex - firstTempBlock.startIndex
+        )
+      ) {
+        tempInfo[1].canMerge = false;
+        firstTempBlock.canMerge = false;
+        tempInfo[1].officialIndex = 1;
+        tempInfo[1].targetCount = infoForIndex[1].info!;
+      }
+      if (
+        lastTempBlock.targetCount !== undefined &&
+        tempInfo[tempInfo.length - 2] &&
+        lastTempBlock.endIndex - tempInfo[tempInfo.length - 2].startIndex >
+          lastTempBlock.targetCount &&
+        !unmatchedInfos.some(
+          (n) =>
+            n.info! <=
+            lastTempBlock.endIndex - tempInfo[tempInfo.length - 2].startIndex
+        )
+      ) {
+        tempInfo[tempInfo.length - 2].canMerge = false;
+        lastTempBlock.canMerge = false;
+        tempInfo[tempInfo.length - 2].officialIndex = infoForIndex.length - 2;
+        tempInfo[tempInfo.length - 2].targetCount =
+          infoForIndex[infoForIndex.length - 2].info!;
+      }
+      for (const block of tempInfo) {
+        if (block.officialIndex !== undefined && block.canMerge === false) {
+          if (
+            block.count < block.targetCount! &&
+            block.endIndex + block.targetCount! - block.count >
+              infoForIndex[block.officialIndex].endLimitIndex!
+          ) {
+            const cellsToFillToLeft =
+              block.endIndex +
+              block.targetCount! -
+              block.count -
+              infoForIndex[block.officialIndex].endLimitIndex!;
+            for (
+              let i = block.startIndex - 1;
+              i >= block.startIndex - cellsToFillToLeft;
+              i--
+            ) {
+              solveCellWithCheck(
+                solvedLineMap,
+                i,
+                true,
+                setIsSolving,
+                selectedIndex,
+                selectedDirection,
+                gridMap
+              );
+              block.count++;
+            }
+            block.startIndex -= cellsToFillToLeft;
+          }
+        }
+      }
+    }
 
     // Solves missing blocks in unbroken empty spaces
     emptySpaces = calcEmptySpaces(solvedLineMap, gridSize);
