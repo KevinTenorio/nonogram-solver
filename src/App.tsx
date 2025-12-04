@@ -499,32 +499,6 @@ function App() {
         if (tempInfo[i]?.count !== infoForIndex[i].info!) {
           infoSatisfied = false;
           break;
-        } else {
-          // Marks blocks as solved
-          const blockEndIndex = tempInfo[i].endIndex;
-          const blockStartIndex = tempInfo[i].startIndex;
-          if (blockEndIndex + 1 < gridSize) {
-            solveCellWithCheck(
-              solvedLineMap,
-              blockEndIndex + 1,
-              false,
-              setIsSolving,
-              selectedIndex,
-              selectedDirection,
-              gridMap
-            );
-          }
-          if (blockStartIndex - 1 >= 0) {
-            solveCellWithCheck(
-              solvedLineMap,
-              blockStartIndex - 1,
-              false,
-              setIsSolving,
-              selectedIndex,
-              selectedDirection,
-              gridMap
-            );
-          }
         }
       }
     }
@@ -1011,6 +985,42 @@ function App() {
           solveCellWithCheck(
             solvedLineMap,
             i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
+      }
+    }
+
+    // Blocks solved Infos' neighbours
+    for (const block of tempInfo) {
+      if (
+        block.officialIndex !== undefined &&
+        block.count === block.targetCount
+      ) {
+        // Marks blocks as solved
+        const blockEndIndex = block.endIndex;
+        const blockStartIndex = block.startIndex;
+        block.isBlocked = true;
+        // Blocks neighbours
+        if (blockEndIndex + 1 < gridSize) {
+          solveCellWithCheck(
+            solvedLineMap,
+            blockEndIndex + 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
+        if (blockStartIndex - 1 >= 0) {
+          solveCellWithCheck(
+            solvedLineMap,
+            blockStartIndex - 1,
             false,
             setIsSolving,
             selectedIndex,
