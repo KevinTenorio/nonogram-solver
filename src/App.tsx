@@ -931,6 +931,96 @@ function App() {
           }
         }
       }
+      for (const block of tempInfo) {
+        if (block.officialIndex !== undefined && block.canMerge === false) {
+          if (
+            block.count < block.targetCount! &&
+            block.startIndex - block.targetCount! + block.count <
+              infoForIndex[block.officialIndex].startLimitIndex!
+          ) {
+            const cellsToFillToRight =
+              infoForIndex[block.officialIndex].startLimitIndex! -
+              block.startIndex +
+              block.targetCount! -
+              block.count;
+            for (
+              let i = block.endIndex + 1;
+              i <= block.endIndex + cellsToFillToRight;
+              i++
+            ) {
+              solveCellWithCheck(
+                solvedLineMap,
+                i,
+                true,
+                setIsSolving,
+                selectedIndex,
+                selectedDirection,
+                gridMap
+              );
+              block.count++;
+            }
+            block.endIndex += cellsToFillToRight;
+          }
+        }
+      }
+      if (
+        tempInfo.length === infoForIndex.length &&
+        !tempInfo.some((n) => n.canMerge !== false)
+      ) {
+        for (let i = 0; i < tempInfo.length; i++) {
+          tempInfo[i].officialIndex = i;
+          tempInfo[i].targetCount = infoForIndex[i].info!;
+        }
+      }
+      if (
+        firstTempBlock.officialIndex === 0 &&
+        firstTempBlock.canMerge === false
+      ) {
+        const missingCells = firstTempBlock.targetCount! - firstTempBlock.count;
+
+        firstEmptyIndex = solvedLineMap.indexOf(null);
+        const cellsToBlockToLeft =
+          firstTempBlock.startIndex - firstEmptyIndex - missingCells;
+        for (
+          let i = firstEmptyIndex;
+          i < firstEmptyIndex + cellsToBlockToLeft;
+          i++
+        ) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
+      }
+      if (
+        lastTempBlock.officialIndex === infoForIndex.length - 1 &&
+        lastTempBlock.canMerge === false
+      ) {
+        const missingCells = lastTempBlock.targetCount! - lastTempBlock.count;
+        lastEmptyIndex = solvedLineMap.lastIndexOf(null);
+        const cellsToBlockToRight =
+          lastEmptyIndex - lastTempBlock.endIndex - missingCells;
+        for (
+          let i = lastEmptyIndex;
+          i > lastEmptyIndex - cellsToBlockToRight;
+          i--
+        ) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
+      }
     }
 
     // Solves missing blocks in unbroken empty spaces
