@@ -100,7 +100,7 @@ function App() {
   const [selectedBlockState, setSelectedBlockState] = useState<boolean | null>(
     true
   );
-  const [delay, setDelay] = useState<number>(25);
+  const [delay, setDelay] = useState<number>(0);
   const [isSolving, setIsSolving] = useState(false);
 
   const solve = useCallback(async () => {
@@ -1159,30 +1159,28 @@ function App() {
         setIsSolving(false);
         return;
       }
-
-      await solve();
-      if (selectedIndex === gridSize - 1) {
-        setSelectedDirection((prevDirection) =>
-          prevDirection === "row" ? "column" : "row"
-        );
-      }
-      setSelectedIndex((prevIndex) => {
-        return (prevIndex + 1) % gridSize;
-      });
+      const nextIndex = (selectedIndex + 1) % gridSize;
+      setTimeout(async () => {
+        await solve();
+        setSelectedIndex((prevIndex) => {
+          const nextIndex = (prevIndex + 1) % gridSize;
+          if (nextIndex === 0) {
+            setSelectedDirection((prevDirection) =>
+              prevDirection === "row" ? "column" : "row"
+            );
+          }
+          return nextIndex;
+        });
+        if (nextIndex === 0) {
+          setSelectedDirection((prevDirection) =>
+            prevDirection === "row" ? "column" : "row"
+          );
+        }
+      }, delay);
     };
 
-    const intervalId = setInterval(solveGrid, delay);
-
-    return () => clearInterval(intervalId);
-  }, [
-    isSolving,
-    gridSize,
-    gridMap,
-    selectedIndex,
-    selectedDirection,
-    solve,
-    delay,
-  ]);
+    solveGrid();
+  }, [isSolving, gridMap, solve, delay, gridSize]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
