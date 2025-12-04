@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import "./App.css";
-
 import easy1 from "./easy1.json";
 import easy2 from "./easy2.json";
 import medium1 from "./medium1.json";
@@ -10,1312 +9,24 @@ import hard2 from "./hard2.json";
 import specialist1 from "./specialist1.json";
 import specialist2 from "./specialist2.json";
 import specialist3 from "./specialist3.json";
-
-const solveCellWithCheck = (
-  solvedLineMap: (boolean | null)[],
-  index: number,
-  state: boolean | null,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  if (index < 0 || index >= solvedLineMap.length) {
-    console.error({
-      solvedLineMap,
-      index,
-      state,
-      selectedIndex,
-      selectedDirection,
-      gridMap,
-    });
-    return;
-  }
-  if (solvedLineMap[index] === null) {
-    solvedLineMap[index] = state;
-  } else if (solvedLineMap[index] !== state) {
-    console.error({
-      solvedLineMap,
-      index,
-      state,
-      selectedIndex,
-      selectedDirection,
-      gridMap,
-    });
-    setIsSolving(false);
-    throw new Error("Conflict in cell state");
-  }
-};
-
-const calcEmptySpaces = (
-  solvedLineMap: (boolean | null)[],
-  gridSize: number
-) => {
-  const emptySpaces: {
-    startIndex: number;
-    endIndex: number;
-    size: number;
-  }[] = [];
-  let countingEmpty = false;
-  let emptyStartIndex = 0;
-  for (let i = 0; i < gridSize; i++) {
-    if (
-      solvedLineMap[i] === null &&
-      (i === 0 || solvedLineMap[i - 1] === false)
-    ) {
-      if (!countingEmpty) {
-        countingEmpty = true;
-        emptyStartIndex = i;
-      }
-    } else if (solvedLineMap[i] === false) {
-      if (countingEmpty) {
-        countingEmpty = false;
-        emptySpaces.push({
-          startIndex: emptyStartIndex,
-          endIndex: i - 1,
-          size: i - emptyStartIndex,
-        });
-      }
-    }
-  }
-  if (countingEmpty) {
-    emptySpaces.push({
-      startIndex: emptyStartIndex,
-      endIndex: gridSize - 1,
-      size: gridSize - emptyStartIndex,
-    });
-  }
-  return emptySpaces;
-};
-
-const initializeSolveData = (
-  selectedDirection: "row" | "column",
-  rowInfo: (number | null)[][],
-  columnInfo: (number | null)[][],
-  selectedIndex: number,
-  gridSize: number,
-  gridMap: (boolean | null)[][]
-) => {
-  const infoForIndex: {
-    info: number | null;
-    isSolved: boolean;
-    startIndex?: number;
-    endIndex?: number;
-    startLimitIndex?: number;
-    endLimitIndex?: number;
-  }[] =
-    selectedDirection === "row"
-      ? rowInfo[selectedIndex].map((n) => ({ info: n, isSolved: false }))
-      : columnInfo[selectedIndex].map((n) => ({ info: n, isSolved: false }));
-
-  const solvedLineMap: (boolean | null)[] = new Array(gridSize).fill(null);
-  if (selectedDirection === "row") {
-    for (let i = 0; i < gridSize; i++) {
-      solvedLineMap[i] = gridMap[selectedIndex][i];
-    }
-  }
-  if (selectedDirection === "column") {
-    for (let i = 0; i < gridSize; i++) {
-      solvedLineMap[i] = gridMap[i][selectedIndex];
-    }
-  }
-
-  return { infoForIndex, solvedLineMap };
-};
-
-const blockLineEdges = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  let somethingChangedBlocks = true;
-  let firstUnblockedIndex = Math.min(
-    solvedLineMap.indexOf(null) !== -1
-      ? solvedLineMap.indexOf(null)
-      : gridSize + 1,
-    solvedLineMap.indexOf(true)
-  );
-  let lastUnblockedIndex = Math.max(
-    solvedLineMap.lastIndexOf(null),
-    solvedLineMap.lastIndexOf(true)
-  );
-  while (somethingChangedBlocks) {
-    somethingChangedBlocks = false;
-    const firstBlockedIndex =
-      solvedLineMap.slice(firstUnblockedIndex).indexOf(false) +
-      firstUnblockedIndex;
-    const lastBlockedIndex = solvedLineMap
-      .slice(0, lastUnblockedIndex)
-      .lastIndexOf(false);
-
-    if (firstBlockedIndex !== -1 && firstBlockedIndex < infoForIndex[0].info!) {
-      for (let i = 0; i <= firstBlockedIndex; i++) {
-        if (solvedLineMap[i] === false) continue;
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        somethingChangedBlocks = true;
-      }
-    }
-    if (
-      lastBlockedIndex !== -1 &&
-      gridSize - lastBlockedIndex - 1 <
-        infoForIndex[infoForIndex.length - 1].info!
-    ) {
-      for (let i = lastBlockedIndex; i < gridSize; i++) {
-        if (solvedLineMap[i] === false) continue;
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        somethingChangedBlocks = true;
-      }
-    }
-    firstUnblockedIndex = Math.min(
-      solvedLineMap.indexOf(null) !== -1
-        ? solvedLineMap.indexOf(null)
-        : gridSize + 1,
-      solvedLineMap.indexOf(true)
-    );
-    lastUnblockedIndex = Math.max(
-      solvedLineMap.lastIndexOf(null),
-      solvedLineMap.lastIndexOf(true)
-    );
-  }
-  return { firstUnblockedIndex, lastUnblockedIndex };
-};
-
-const fillFromEdges = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null }[],
-  firstUnblockedIndex: number,
-  lastUnblockedIndex: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  const firstTrueIndex = solvedLineMap.indexOf(true);
-  const lastTrueIndex = solvedLineMap.lastIndexOf(true);
-  if (
-    firstTrueIndex !== -1 &&
-    firstTrueIndex - firstUnblockedIndex < infoForIndex[0].info!
-  ) {
-    for (
-      let i = firstTrueIndex;
-      i < firstUnblockedIndex + infoForIndex[0].info!;
-      i++
-    ) {
-      solveCellWithCheck(
-        solvedLineMap,
-        i,
-        true,
-        setIsSolving,
-        selectedIndex,
-        selectedDirection,
-        gridMap
-      );
-    }
-  }
-  if (
-    lastTrueIndex !== -1 &&
-    lastUnblockedIndex - lastTrueIndex <
-      infoForIndex[infoForIndex.length - 1].info!
-  ) {
-    for (
-      let i = lastTrueIndex;
-      i > lastUnblockedIndex - infoForIndex[infoForIndex.length - 1].info!;
-      i--
-    ) {
-      solveCellWithCheck(
-        solvedLineMap,
-        i,
-        true,
-        setIsSolving,
-        selectedIndex,
-        selectedDirection,
-        gridMap
-      );
-    }
-  }
-};
-
-const blockBasedOnKnowns = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null }[],
-  firstUnblockedIndex: number,
-  lastUnblockedIndex: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  const firstTrueIndex = solvedLineMap.indexOf(true);
-  const lastTrueIndex = solvedLineMap.lastIndexOf(true);
-  if (firstTrueIndex !== -1) {
-    let currentLeftBlockSize = 0;
-    for (
-      let i = firstTrueIndex;
-      i < infoForIndex[0].info! + firstTrueIndex;
-      i++
-    ) {
-      if (solvedLineMap[i] === true) {
-        currentLeftBlockSize++;
-      } else {
-        break;
-      }
-    }
-    const leftBlockSizeMissing = infoForIndex[0].info! - currentLeftBlockSize;
-    if (
-      leftBlockSizeMissing < firstTrueIndex - firstUnblockedIndex &&
-      (firstTrueIndex - firstUnblockedIndex < infoForIndex[0].info! ||
-        infoForIndex.length === 1)
-    ) {
-      for (
-        let i = firstUnblockedIndex;
-        i < firstTrueIndex - leftBlockSizeMissing;
-        i++
-      ) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-  if (lastTrueIndex !== -1) {
-    let currentRightBlockSize = 0;
-    for (
-      let i = lastTrueIndex;
-      i > lastTrueIndex - infoForIndex[infoForIndex.length - 1].info!;
-      i--
-    ) {
-      if (solvedLineMap[i] === true) {
-        currentRightBlockSize++;
-      } else {
-        break;
-      }
-    }
-    const rightBlockSizeMissing =
-      infoForIndex[infoForIndex.length - 1].info! - currentRightBlockSize;
-    if (
-      rightBlockSizeMissing < lastUnblockedIndex - lastTrueIndex &&
-      (lastUnblockedIndex - lastTrueIndex <
-        infoForIndex[infoForIndex.length - 1].info! ||
-        infoForIndex.length === 1)
-    ) {
-      for (
-        let i = lastUnblockedIndex;
-        i > lastTrueIndex + rightBlockSizeMissing;
-        i--
-      ) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-};
-
-const blockIsolatedEmpties = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null }[],
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  const firstTrueIndex = solvedLineMap.indexOf(true);
-  const lastTrueIndex = solvedLineMap.lastIndexOf(true);
-  const firstEmptyIndex = solvedLineMap.indexOf(null);
-  const lastEmptyIndex = solvedLineMap.lastIndexOf(null);
-  if (
-    firstTrueIndex !== -1 &&
-    firstTrueIndex - firstEmptyIndex === infoForIndex[0].info!
-  ) {
-    solveCellWithCheck(
-      solvedLineMap,
-      firstEmptyIndex,
-      false,
-      setIsSolving,
-      selectedIndex,
-      selectedDirection,
-      gridMap
-    );
-  }
-  if (
-    lastTrueIndex !== -1 &&
-    lastEmptyIndex - lastTrueIndex ===
-      infoForIndex[infoForIndex.length - 1].info!
-  ) {
-    solveCellWithCheck(
-      solvedLineMap,
-      lastEmptyIndex,
-      false,
-      setIsSolving,
-      selectedIndex,
-      selectedDirection,
-      gridMap
-    );
-  }
-};
-
-const mainSolveLoop = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: {
-    info: number | null;
-    isSolved: boolean;
-    startIndex?: number;
-    endIndex?: number;
-    startLimitIndex?: number;
-    endLimitIndex?: number;
-  }[],
-  gridSize: number,
-  firstUnblockedIndex: number,
-  lastUnblockedIndex: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  for (let i = 0; i < infoForIndex.length; i++) {
-    const blockSize = infoForIndex[i].info!;
-    let blocksFilledToLeft =
-      firstUnblockedIndex !== -1 ? firstUnblockedIndex : 0;
-    let blocksFilledToRight =
-      lastUnblockedIndex !== -1 ? gridSize - 1 - lastUnblockedIndex : 0;
-    for (let j = 0; j < i; j++) {
-      blocksFilledToLeft +=
-        infoForIndex[j] !== null ? infoForIndex[j].info! + 1 : 0;
-    }
-    for (let j = infoForIndex.length - 1; j > i; j--) {
-      blocksFilledToRight +=
-        infoForIndex[j] !== null ? infoForIndex[j].info! + 1 : 0;
-    }
-
-    for (let j = blocksFilledToLeft; j < blocksFilledToLeft + blockSize!; j++) {
-      if (solvedLineMap[j] === false) {
-        blocksFilledToLeft = j + 1;
-        j = blocksFilledToLeft - 1;
-      }
-    }
-
-    for (
-      let j = gridSize - 1 - blocksFilledToRight;
-      j >= gridSize - blocksFilledToRight - blockSize!;
-      j--
-    ) {
-      if (solvedLineMap[j] === false) {
-        blocksFilledToRight = gridSize - j;
-        j = gridSize - blocksFilledToRight - 1;
-      }
-    }
-    infoForIndex[i].startLimitIndex = blocksFilledToLeft;
-    infoForIndex[i].endLimitIndex = gridSize - blocksFilledToRight - 1;
-    const leftLeaningEndIndex = blocksFilledToLeft + blockSize!;
-    const rightLeaningStartIndex = gridSize - blocksFilledToRight - blockSize!;
-    if (rightLeaningStartIndex < leftLeaningEndIndex) {
-      for (let k = leftLeaningEndIndex - 1; k >= rightLeaningStartIndex; k--) {
-        solveCellWithCheck(
-          solvedLineMap,
-          k,
-          true,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-      if (leftLeaningEndIndex - rightLeaningStartIndex === blockSize!) {
-        if (rightLeaningStartIndex - 1 >= 0)
-          solveCellWithCheck(
-            solvedLineMap,
-            rightLeaningStartIndex - 1,
-            false,
-            setIsSolving,
-            selectedIndex,
-            selectedDirection,
-            gridMap
-          );
-        if (leftLeaningEndIndex < gridSize)
-          solveCellWithCheck(
-            solvedLineMap,
-            leftLeaningEndIndex,
-            false,
-            setIsSolving,
-            selectedIndex,
-            selectedDirection,
-            gridMap
-          );
-      }
-    }
-  }
-};
-
-const checkAndFinalizeLine = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  let infoSatisfied = true;
-  let count = 0;
-  const tempInfo: {
-    count: number;
-    startIndex: number;
-    endIndex: number;
-    isBlocked: boolean;
-    canMerge?: boolean;
-    canMergeWithNext?: boolean;
-    canMergeWithPrev?: boolean;
-    officialIndex?: number;
-    targetCount?: number;
-    startLimitIndex?: number;
-    endLimitIndex?: number;
-  }[] = [];
-  for (let i = 0; i < gridSize; i++) {
-    if (solvedLineMap[i] === true) {
-      count++;
-    } else {
-      if (count > 0) {
-        tempInfo.push({
-          count,
-          startIndex: i - count,
-          endIndex: i - 1,
-          isBlocked: false,
-        });
-        count = 0;
-      }
-    }
-  }
-  if (count > 0) {
-    tempInfo.push({
-      count,
-      startIndex: gridSize - count,
-      endIndex: gridSize - 1,
-      isBlocked: false,
-    });
-  }
-  if (tempInfo.length !== infoForIndex.length) {
-    infoSatisfied = false;
-  } else {
-    for (let i = 0; i < tempInfo.length; i++) {
-      if (tempInfo[i]?.count !== infoForIndex[i].info!) {
-        infoSatisfied = false;
-        break;
-      }
-    }
-  }
-  if (infoSatisfied) {
-    for (let i = 0; i < gridSize; i++) {
-      if (solvedLineMap[i] === null) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-  return tempInfo;
-};
-
-const handleSolvedBlocks = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: {
-    info: number | null;
-    isSolved: boolean;
-    startIndex?: number;
-    endIndex?: number;
-  }[],
-  tempInfo: {
-    count: number;
-    startIndex: number;
-    endIndex: number;
-    isBlocked: boolean;
-  }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  let somethingChangedBlocks = true;
-  const auxInfo = [...tempInfo];
-  while (
-    somethingChangedBlocks &&
-    infoForIndex.filter((n) => !n.isSolved).length > 0 &&
-    auxInfo.length > 0
-  ) {
-    somethingChangedBlocks = false;
-    const biggestBlockSize = Math.max(
-      ...infoForIndex.filter((n) => !n.isSolved).map((n) => n.info!)
-    );
-    const biggestSolvedBlockSize = Math.max(...auxInfo.map((b) => b.count));
-    if (biggestBlockSize === biggestSolvedBlockSize) {
-      const solvedBlockTemp = auxInfo.find((b) => b.count === biggestBlockSize);
-      const blockEndIndex = solvedBlockTemp!.endIndex;
-      const blockStartIndex = solvedBlockTemp!.startIndex;
-      if (blockEndIndex + 1 < gridSize) {
-        solveCellWithCheck(
-          solvedLineMap,
-          blockEndIndex + 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-      if (blockStartIndex - 1 >= 0) {
-        solveCellWithCheck(
-          solvedLineMap,
-          blockStartIndex - 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-      solvedBlockTemp!.isBlocked = true;
-
-      if (
-        infoForIndex.filter((n) => n.info === biggestBlockSize && !n.isSolved)
-          .length === 1 ||
-        infoForIndex.filter((n) => n.info === biggestBlockSize && !n.isSolved)
-          .length === auxInfo.filter((b) => b.count === biggestBlockSize).length
-      ) {
-        const solvedBlockIndex = infoForIndex.findIndex(
-          (n) => n.info === biggestBlockSize && !n.isSolved
-        );
-        infoForIndex[solvedBlockIndex].isSolved = true;
-        infoForIndex[solvedBlockIndex].startIndex = solvedBlockTemp!.startIndex;
-        infoForIndex[solvedBlockIndex].endIndex = solvedBlockTemp!.endIndex;
-      }
-      somethingChangedBlocks = true;
-      auxInfo.splice(
-        auxInfo.findIndex((b) => b.count === biggestBlockSize),
-        1
-      );
-    }
-  }
-
-  for (let i = 0; i < infoForIndex.length; i++) {
-    if (infoForIndex[i].isSolved) {
-      if (i === 0) {
-        for (let j = 0; j < infoForIndex[i].startIndex!; j++) {
-          if (solvedLineMap[j] === null) {
-            solveCellWithCheck(
-              solvedLineMap,
-              j,
-              false,
-              setIsSolving,
-              selectedIndex,
-              selectedDirection,
-              gridMap
-            );
-          }
-        }
-      } else if (infoForIndex[i - 1].isSolved) {
-        for (
-          let j = infoForIndex[i - 1].endIndex! + 1;
-          j < infoForIndex[i].startIndex!;
-          j++
-        ) {
-          if (solvedLineMap[j] === null) {
-            solveCellWithCheck(
-              solvedLineMap,
-              j,
-              false,
-              setIsSolving,
-              selectedIndex,
-              selectedDirection,
-              gridMap
-            );
-          }
-        }
-      }
-      if (i === infoForIndex.length - 1) {
-        for (let j = infoForIndex[i].endIndex! + 1; j < gridSize; j++) {
-          if (solvedLineMap[j] === null) {
-            solveCellWithCheck(
-              solvedLineMap,
-              j,
-              false,
-              setIsSolving,
-              selectedIndex,
-              selectedDirection,
-              gridMap
-            );
-          }
-        }
-      }
-    }
-  }
-};
-
-const blockSmallEmptySpaces = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null; isSolved: boolean }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  const smallestUnsolvedBlockSize = Math.min(
-    ...infoForIndex.filter((n) => !n.isSolved).map((n) => n.info!)
-  );
-  const emptySpaces = calcEmptySpaces(solvedLineMap, gridSize);
-
-  for (const space of emptySpaces) {
-    if (space.size < smallestUnsolvedBlockSize) {
-      for (let i = space.startIndex; i <= space.endIndex; i++) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-};
-
-const handleUnmergeableBlocks = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: {
-    info: number | null;
-    isSolved: boolean;
-    startIndex?: number;
-    endIndex?: number;
-  }[],
-  tempInfo: {
-    count: number;
-    startIndex: number;
-    endIndex: number;
-    isBlocked: boolean;
-    canMerge?: boolean;
-    canMergeWithNext?: boolean;
-    canMergeWithPrev?: boolean;
-  }[],
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  if (tempInfo.length > 0) {
-    for (let i = 1; i < tempInfo.length; i++) {
-      let canMerge = true;
-      const mergedBlockSize =
-        tempInfo[i - 1].count +
-        tempInfo[i].count +
-        tempInfo[i].startIndex -
-        tempInfo[i - 1].endIndex -
-        1;
-      if (mergedBlockSize > Math.max(...infoForIndex.map((n) => n.info!))) {
-        canMerge = false;
-      }
-      for (let j = tempInfo[i - 1].endIndex; j < tempInfo[i].startIndex; j++) {
-        if (solvedLineMap[j] === false) {
-          canMerge = false;
-          break;
-        }
-      }
-      if (!canMerge) {
-        tempInfo[i - 1].canMerge = false;
-        tempInfo[i].canMerge = false;
-        tempInfo[i - 1].canMergeWithNext = false;
-        tempInfo[i].canMergeWithPrev = false;
-      }
-    }
-    for (let i = 0; i < tempInfo.length; i++) {
-      if (
-        tempInfo[i].canMerge === false &&
-        tempInfo.length === infoForIndex.length &&
-        infoForIndex[i].info === tempInfo[i].count
-      ) {
-        infoForIndex[i].isSolved = true;
-        infoForIndex[i].startIndex = tempInfo[i].startIndex;
-        infoForIndex[i].endIndex = tempInfo[i].endIndex;
-        tempInfo[i].isBlocked = true;
-        solveCellWithCheck(
-          solvedLineMap,
-          tempInfo[i].startIndex - 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        solveCellWithCheck(
-          solvedLineMap,
-          tempInfo[i].endIndex + 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-};
-
-const completeLineFromEdges = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: {
-    info: number | null;
-    isSolved: boolean;
-    startIndex?: number;
-    endIndex?: number;
-  }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  let currentBlockSize = 0;
-  let infoToSolve = infoForIndex.find((n) => !n.isSolved);
-  while (infoToSolve !== undefined) {
-    // From the left edge
-    currentBlockSize = 0;
-    infoToSolve = infoForIndex.find((n) => !n.isSolved);
-    if (infoToSolve === undefined) {
-      break;
-    }
-    const startingIndex =
-      (infoForIndex[infoForIndex.indexOf(infoToSolve) - 1]?.endIndex ?? -1) + 1;
-    for (let i = startingIndex; i < gridSize; i++) {
-      if (currentBlockSize >= infoToSolve.info!) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        infoToSolve.isSolved = true;
-        infoToSolve.startIndex = i - currentBlockSize;
-        infoToSolve.endIndex = i - 1;
-        currentBlockSize = 0;
-        break;
-      }
-      if (solvedLineMap[i] === null && currentBlockSize === 0) {
-        infoToSolve = undefined;
-        break;
-      } else if (solvedLineMap[i] === true) {
-        currentBlockSize++;
-      } else if (solvedLineMap[i] === false) {
-        currentBlockSize = 0;
-      } else if (
-        solvedLineMap[i] === null &&
-        currentBlockSize < infoToSolve.info!
-      ) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          true,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        currentBlockSize++;
-      }
-    }
-    // From the right edge
-    currentBlockSize = 0;
-    infoToSolve =
-      infoForIndex.map((n) => n.isSolved).lastIndexOf(false) !== -1
-        ? infoForIndex[infoForIndex.map((n) => n.isSolved).lastIndexOf(false)]
-        : undefined;
-    if (infoToSolve === undefined) {
-      break;
-    }
-    const endingIndex =
-      (infoForIndex[infoForIndex.indexOf(infoToSolve) + 1]?.startIndex ??
-        gridSize) - 1;
-    for (let i = endingIndex; i >= 0; i--) {
-      if (currentBlockSize >= infoToSolve.info!) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        infoToSolve.isSolved = true;
-        infoToSolve.startIndex = i + 1;
-        infoToSolve.endIndex = i + currentBlockSize;
-        currentBlockSize = 0;
-        break;
-      }
-      if (solvedLineMap[i] === null && currentBlockSize === 0) {
-        infoToSolve = undefined;
-        break;
-      } else if (solvedLineMap[i] === true) {
-        currentBlockSize++;
-      } else if (solvedLineMap[i] === false) {
-        currentBlockSize = 0;
-      } else if (
-        solvedLineMap[i] === null &&
-        currentBlockSize < infoToSolve.info!
-      ) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          true,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        currentBlockSize++;
-      }
-    }
-  }
-};
-
-const expandUnmergeableBlocks = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: {
-    info: number | null;
-    isSolved: boolean;
-    startLimitIndex?: number;
-    endLimitIndex?: number;
-  }[],
-  tempInfo: {
-    count: number;
-    startIndex: number;
-    endIndex: number;
-    canMerge?: boolean;
-    officialIndex?: number;
-    targetCount?: number;
-  }[],
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  if (tempInfo.length > 0) {
-    const firstTempBlock = tempInfo[0];
-    const firstInfoBlock = infoForIndex[0];
-    let firstEmptyIndex = solvedLineMap.indexOf(null);
-    if (firstInfoBlock.info! > firstTempBlock.startIndex - firstEmptyIndex) {
-      firstTempBlock.officialIndex = 0;
-      firstTempBlock.targetCount = firstInfoBlock.info!;
-    }
-    const lastTempBlock = tempInfo[tempInfo.length - 1];
-    const lastInfoBlock = infoForIndex[infoForIndex.length - 1];
-    let lastEmptyIndex = solvedLineMap.lastIndexOf(null);
-    if (lastInfoBlock.info! > lastEmptyIndex - lastTempBlock.endIndex) {
-      lastTempBlock.officialIndex = infoForIndex.length - 1;
-      lastTempBlock.targetCount = lastInfoBlock.info!;
-    }
-    if (
-      firstTempBlock.targetCount !== undefined &&
-      tempInfo[1] &&
-      tempInfo[1].endIndex - firstTempBlock.startIndex >
-        firstTempBlock.targetCount &&
-      infoForIndex[1].info! > tempInfo[1].endIndex - firstTempBlock.startIndex
-    ) {
-      tempInfo[1].canMerge = false;
-      firstTempBlock.canMerge = false;
-      tempInfo[1].officialIndex = 1;
-      tempInfo[1].targetCount = infoForIndex[1].info!;
-    }
-    if (
-      lastTempBlock.targetCount !== undefined &&
-      tempInfo[tempInfo.length - 2] &&
-      lastTempBlock.endIndex - tempInfo[tempInfo.length - 2].startIndex >
-        lastTempBlock.targetCount &&
-      infoForIndex[infoForIndex.length - 2].info! >
-        lastTempBlock.endIndex - tempInfo[tempInfo.length - 2].startIndex
-    ) {
-      tempInfo[tempInfo.length - 2].canMerge = false;
-      lastTempBlock.canMerge = false;
-      tempInfo[tempInfo.length - 2].officialIndex = infoForIndex.length - 2;
-      tempInfo[tempInfo.length - 2].targetCount =
-        infoForIndex[infoForIndex.length - 2].info!;
-    }
-    for (const block of tempInfo) {
-      if (block.officialIndex !== undefined && block.canMerge === false) {
-        if (
-          block.count < block.targetCount! &&
-          block.endIndex + block.targetCount! - block.count >
-            infoForIndex[block.officialIndex].endLimitIndex!
-        ) {
-          const cellsToFillToLeft =
-            block.endIndex +
-            block.targetCount! -
-            block.count -
-            infoForIndex[block.officialIndex].endLimitIndex!;
-          for (
-            let i = block.startIndex - 1;
-            i >= block.startIndex - cellsToFillToLeft;
-            i--
-          ) {
-            solveCellWithCheck(
-              solvedLineMap,
-              i,
-              true,
-              setIsSolving,
-              selectedIndex,
-              selectedDirection,
-              gridMap
-            );
-            block.count++;
-          }
-          block.startIndex -= cellsToFillToLeft;
-        }
-      }
-    }
-    for (const block of tempInfo) {
-      if (block.officialIndex !== undefined && block.canMerge === false) {
-        if (
-          block.count < block.targetCount! &&
-          block.startIndex - block.targetCount! + block.count <
-            infoForIndex[block.officialIndex].startLimitIndex!
-        ) {
-          const cellsToFillToRight =
-            infoForIndex[block.officialIndex].startLimitIndex! -
-            block.startIndex +
-            block.targetCount! -
-            block.count;
-          for (
-            let i = block.endIndex + 1;
-            i <= block.endIndex + cellsToFillToRight;
-            i++
-          ) {
-            solveCellWithCheck(
-              solvedLineMap,
-              i,
-              true,
-              setIsSolving,
-              selectedIndex,
-              selectedDirection,
-              gridMap
-            );
-            block.count++;
-          }
-          block.endIndex += cellsToFillToRight;
-        }
-      }
-    }
-    if (
-      tempInfo.length === infoForIndex.length &&
-      !tempInfo.some((n) => n.canMerge !== false)
-    ) {
-      for (let i = 0; i < tempInfo.length; i++) {
-        tempInfo[i].officialIndex = i;
-        tempInfo[i].targetCount = infoForIndex[i].info!;
-      }
-    }
-    if (
-      firstTempBlock.officialIndex === 0 &&
-      firstTempBlock.canMerge === false
-    ) {
-      const missingCells = firstTempBlock.targetCount! - firstTempBlock.count;
-
-      firstEmptyIndex = solvedLineMap.indexOf(null);
-      const cellsToBlockToLeft =
-        firstTempBlock.startIndex - firstEmptyIndex - missingCells;
-      for (
-        let i = firstEmptyIndex;
-        i < firstEmptyIndex + cellsToBlockToLeft;
-        i++
-      ) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-    if (
-      lastTempBlock.officialIndex === infoForIndex.length - 1 &&
-      lastTempBlock.canMerge === false
-    ) {
-      const missingCells = lastTempBlock.targetCount! - lastTempBlock.count;
-      lastEmptyIndex = solvedLineMap.lastIndexOf(null);
-      const cellsToBlockToRight =
-        lastEmptyIndex - lastTempBlock.endIndex - missingCells;
-      for (
-        let i = lastEmptyIndex;
-        i > lastEmptyIndex - cellsToBlockToRight;
-        i--
-      ) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-};
-
-const finalizeSolvedBlocks = (
-  solvedLineMap: (boolean | null)[],
-  tempInfo: {
-    count: number;
-    startIndex: number;
-    endIndex: number;
-    isBlocked: boolean;
-    officialIndex?: number;
-    targetCount?: number;
-  }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  for (const block of tempInfo) {
-    if (
-      block.officialIndex !== undefined &&
-      block.count === block.targetCount
-    ) {
-      // Marks blocks as solved
-      const blockEndIndex = block.endIndex;
-      const blockStartIndex = block.startIndex;
-      block.isBlocked = true;
-      // Blocks neighbours
-      if (blockEndIndex + 1 < gridSize) {
-        solveCellWithCheck(
-          solvedLineMap,
-          blockEndIndex + 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-      if (blockStartIndex - 1 >= 0) {
-        solveCellWithCheck(
-          solvedLineMap,
-          blockStartIndex - 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-};
-
-const mergeBlocks = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null }[],
-  tempInfo: {
-    count: number;
-    startIndex: number;
-    endIndex: number;
-    canMerge?: boolean;
-    canMergeWithNext?: boolean;
-    canMergeWithPrev?: boolean;
-  }[],
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  if (
-    tempInfo.length === infoForIndex.length + 1 &&
-    tempInfo.filter((n) => n.canMerge !== false).length === 1
-  ) {
-    const mergeableBlock = tempInfo.find((n) => n.canMerge !== false)!;
-    const mergeableBlockIndex = tempInfo.indexOf(mergeableBlock);
-    const neighborBlockToMerge =
-      mergeableBlockIndex > 0 &&
-      tempInfo[mergeableBlockIndex - 1]?.canMergeWithNext !== false
-        ? tempInfo[mergeableBlockIndex - 1]
-        : mergeableBlockIndex < tempInfo.length - 1 &&
-          tempInfo[mergeableBlockIndex + 1]?.canMergeWithPrev !== false
-        ? tempInfo[mergeableBlockIndex + 1]
-        : undefined;
-
-    if (neighborBlockToMerge !== undefined) {
-      const startingIndex = Math.min(
-        mergeableBlock.startIndex,
-        neighborBlockToMerge.startIndex
-      );
-      const endingIndex = Math.max(
-        mergeableBlock.endIndex,
-        neighborBlockToMerge.endIndex
-      );
-      mergeableBlock.count = 0;
-      for (let i = startingIndex; i <= endingIndex; i++) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          true,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        mergeableBlock.count++;
-      }
-      mergeableBlock.startIndex = startingIndex;
-      mergeableBlock.endIndex = endingIndex;
-      tempInfo.splice(tempInfo.indexOf(neighborBlockToMerge), 1);
-    }
-  }
-};
-
-const blockImpossibleCells = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null }[],
-  tempInfo: {
-    count: number;
-    startIndex: number;
-    endIndex: number;
-    targetCount?: number;
-    officialIndex?: number;
-    startLimitIndex?: number;
-    endLimitIndex?: number;
-  }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  if (
-    tempInfo.length === infoForIndex.length &&
-    tempInfo.every((b) => b.officialIndex !== undefined)
-  ) {
-    for (const block of tempInfo) {
-      const missingCells = block.targetCount! - block.count;
-      block.startLimitIndex = block.startIndex - missingCells;
-      block.endLimitIndex = block.endIndex + missingCells;
-    }
-    for (let i = 0; i < gridSize; i++) {
-      if (
-        tempInfo.every((n) => i < n.startLimitIndex! || i > n.endLimitIndex!)
-      ) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-};
-
-const solveUnbrokenSpaces = (
-  solvedLineMap: (boolean | null)[],
-  infoForIndex: { info: number | null; isSolved: boolean }[],
-  gridSize: number,
-  setIsSolving: React.Dispatch<React.SetStateAction<boolean>>,
-  selectedIndex: number,
-  selectedDirection: "row" | "column",
-  gridMap: (boolean | null)[][]
-) => {
-  const emptySpaces = calcEmptySpaces(solvedLineMap, gridSize);
-  if (
-    infoForIndex.filter((n) => !n.isSolved).length === emptySpaces.length &&
-    !infoForIndex
-      .filter((n) => !n.isSolved)
-      ?.map((n) => n.info!)
-      .some((value, index) => value !== emptySpaces.map((n) => n.size)[index])
-  ) {
-    for (const space of emptySpaces) {
-      for (let i = space.startIndex; i <= space.endIndex; i++) {
-        solveCellWithCheck(
-          solvedLineMap,
-          i,
-          true,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-      }
-    }
-  }
-};
-
-const updateGridMap = (
-  gridMap: (boolean | null)[][],
-  solvedLineMap: (boolean | null)[],
-  selectedDirection: "row" | "column",
-  selectedIndex: number,
-  gridSize: number
-) => {
-  const newGridMap = [...gridMap];
-  if (selectedDirection === "row") {
-    for (let i = 0; i < gridSize; i++) {
-      newGridMap[selectedIndex][i] = solvedLineMap[i];
-    }
-  }
-  if (selectedDirection === "column") {
-    for (let i = 0; i < gridSize; i++) {
-      newGridMap[i][selectedIndex] = solvedLineMap[i];
-    }
-  }
-  return newGridMap;
-};
+import solveCellWithCheck from "./functions/solveCellWithCheck";
+import initializeSolveData from "./functions/initializeSolveData";
+import blockLineEdges from "./functions/blockLineEdges";
+import fillFromEdges from "./functions/fillFromEdges";
+import blockBasedOnKnowns from "./functions/blockBasedOnKnowns";
+import blockIsolatedEmpties from "./functions/blockIsolatedEmpties";
+import mainSolveLoop from "./functions/mainSolveLoop";
+import checkAndFinalizeLine from "./functions/checkAndFinalizeLine";
+import handleSolvedBlocks from "./functions/handleSolvedBlocks";
+import blockSmallEmptySpaces from "./functions/blockSmallEmptySpaces";
+import handleUnmergeableBlocks from "./functions/handleUnmergeableBlocks";
+import completeLineFromEdges from "./functions/completeLineFromEdges";
+import expandUnmergeableBlocks from "./functions/expandUnmergeableBlocks";
+import finalizeSolvedBlocks from "./functions/finalizeSolvedBlocks";
+import mergeBlocks from "./functions/mergeBlocks";
+import blockImpossibleCells from "./functions/blockImpossibleCells";
+import solveUnbrokenSpaces from "./functions/solveUnbrokenSpaces";
+import updateGridMap from "./functions/updateGridMap";
 
 function App() {
   const [gridSize, setGridSize] = useState(0);
@@ -1354,7 +65,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     fillFromEdges(
@@ -1365,7 +77,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     blockBasedOnKnowns(
@@ -1376,7 +89,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     blockIsolatedEmpties(
@@ -1385,7 +99,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     firstUnblockedIndex = Math.min(
@@ -1408,7 +123,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     const tempInfo = checkAndFinalizeLine(
@@ -1418,7 +134,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     handleSolvedBlocks(
@@ -1429,7 +146,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     blockSmallEmptySpaces(
@@ -1439,7 +157,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     handleUnmergeableBlocks(
@@ -1449,7 +168,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     completeLineFromEdges(
@@ -1459,7 +179,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     expandUnmergeableBlocks(
@@ -1469,7 +190,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     finalizeSolvedBlocks(
@@ -1479,7 +201,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     mergeBlocks(
@@ -1489,7 +212,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     blockImpossibleCells(
@@ -1500,7 +224,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     solveUnbrokenSpaces(
@@ -1510,7 +235,8 @@ function App() {
       setIsSolving,
       selectedIndex,
       selectedDirection,
-      gridMap
+      gridMap,
+      solveCellWithCheck
     );
 
     const newGridMap = updateGridMap(
@@ -1520,6 +246,7 @@ function App() {
       selectedIndex,
       gridSize
     );
+
     setGridMap(newGridMap);
   }, [
     gridMap,
