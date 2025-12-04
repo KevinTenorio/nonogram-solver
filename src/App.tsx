@@ -865,17 +865,12 @@ function App() {
         lastTempBlock.officialIndex = infoForIndex.length - 1;
         lastTempBlock.targetCount = lastInfoBlock.info!;
       }
-      const unmatchedInfos = infoForIndex.filter(
-        (_, index) => !tempInfo.some((block) => block.officialIndex === index)
-      );
       if (
         firstTempBlock.targetCount !== undefined &&
         tempInfo[1] &&
         tempInfo[1].endIndex - firstTempBlock.startIndex >
           firstTempBlock.targetCount &&
-        !unmatchedInfos.some(
-          (n) => n.info! <= tempInfo[1].endIndex - firstTempBlock.startIndex
-        )
+        infoForIndex[1].info! > tempInfo[1].endIndex - firstTempBlock.startIndex
       ) {
         tempInfo[1].canMerge = false;
         firstTempBlock.canMerge = false;
@@ -887,11 +882,8 @@ function App() {
         tempInfo[tempInfo.length - 2] &&
         lastTempBlock.endIndex - tempInfo[tempInfo.length - 2].startIndex >
           lastTempBlock.targetCount &&
-        !unmatchedInfos.some(
-          (n) =>
-            n.info! <=
-            lastTempBlock.endIndex - tempInfo[tempInfo.length - 2].startIndex
-        )
+        infoForIndex[infoForIndex.length - 2].info! >
+          lastTempBlock.endIndex - tempInfo[tempInfo.length - 2].startIndex
       ) {
         tempInfo[tempInfo.length - 2].canMerge = false;
         lastTempBlock.canMerge = false;
