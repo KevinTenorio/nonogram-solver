@@ -103,7 +103,7 @@ function App() {
   const [delay, setDelay] = useState<number>(25);
   const [isSolving, setIsSolving] = useState(false);
 
-  const solve = useCallback(() => {
+  const solve = useCallback(async () => {
     // Initializes info for the selected line
     const infoForIndex: {
       info: number | null;
@@ -1153,14 +1153,14 @@ function App() {
       return;
     }
 
-    const solveGrid = () => {
+    const solveGrid = async () => {
       const isGridSolved = !gridMap.flat().includes(null);
       if (isGridSolved) {
         setIsSolving(false);
         return;
       }
 
-      solve();
+      await solve();
       if (selectedIndex === gridSize - 1) {
         setSelectedDirection((prevDirection) =>
           prevDirection === "row" ? "column" : "row"
