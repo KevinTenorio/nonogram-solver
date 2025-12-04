@@ -466,6 +466,8 @@ function App() {
       canMergeWithPrev?: boolean;
       officialIndex?: number;
       targetCount?: number;
+      startLimitIndex?: number;
+      endLimitIndex?: number;
     }[] = [];
     for (let i = 0; i < gridSize; i++) {
       if (solvedLineMap[i] === true) {
@@ -1044,6 +1046,7 @@ function App() {
           mergeableBlock.endIndex,
           neighborBlockToMerge.endIndex
         );
+        mergeableBlock.count = 0;
         for (let i = startingIndex; i <= endingIndex; i++) {
           solveCellWithCheck(
             solvedLineMap,
@@ -1059,6 +1062,33 @@ function App() {
         mergeableBlock.startIndex = startingIndex;
         mergeableBlock.endIndex = endingIndex;
         tempInfo.splice(tempInfo.indexOf(neighborBlockToMerge), 1);
+      }
+    }
+
+    // Adds startLimitIndex and endLimitIndex to tempInfo and blocks impossible cells
+    if (
+      tempInfo.length === infoForIndex.length &&
+      tempInfo.every((b) => b.officialIndex !== undefined)
+    ) {
+      for (const block of tempInfo) {
+        const missingCells = block.targetCount! - block.count;
+        block.startLimitIndex = block.startIndex - missingCells;
+        block.endLimitIndex = block.endIndex + missingCells;
+      }
+      for (let i = 0; i < gridSize; i++) {
+        if (
+          tempInfo.every((n) => i < n.startLimitIndex! || i > n.endLimitIndex!)
+        ) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
       }
     }
 
