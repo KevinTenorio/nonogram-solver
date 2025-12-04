@@ -462,6 +462,8 @@ function App() {
       endIndex: number;
       isBlocked: boolean;
       canMerge?: boolean;
+      canMergeWithNext?: boolean;
+      canMergeWithPrev?: boolean;
       officialIndex?: number;
       targetCount?: number;
     }[] = [];
@@ -708,6 +710,8 @@ function App() {
         if (!canMerge) {
           tempInfo[i - 1].canMerge = false;
           tempInfo[i].canMerge = false;
+          tempInfo[i - 1].canMergeWithNext = false;
+          tempInfo[i].canMergeWithPrev = false;
         }
       }
       for (let i = 0; i < tempInfo.length; i++) {
@@ -1012,6 +1016,49 @@ function App() {
             gridMap
           );
         }
+      }
+    }
+
+    // Merges mergeble blocks
+    if (
+      tempInfo.length === infoForIndex.length + 1 &&
+      tempInfo.filter((n) => n.canMerge !== false).length === 1
+    ) {
+      const mergeableBlock = tempInfo.find((n) => n.canMerge !== false)!;
+      const mergeableBlockIndex = tempInfo.indexOf(mergeableBlock);
+      const neighborBlockToMerge =
+        mergeableBlockIndex > 0 &&
+        tempInfo[mergeableBlockIndex - 1]?.canMergeWithNext !== false
+          ? tempInfo[mergeableBlockIndex - 1]
+          : mergeableBlockIndex < tempInfo.length - 1 &&
+            tempInfo[mergeableBlockIndex + 1]?.canMergeWithPrev !== false
+          ? tempInfo[mergeableBlockIndex + 1]
+          : undefined;
+
+      if (neighborBlockToMerge !== undefined) {
+        const startingIndex = Math.min(
+          mergeableBlock.startIndex,
+          neighborBlockToMerge.startIndex
+        );
+        const endingIndex = Math.max(
+          mergeableBlock.endIndex,
+          neighborBlockToMerge.endIndex
+        );
+        for (let i = startingIndex; i <= endingIndex; i++) {
+          solveCellWithCheck(
+            solvedLineMap,
+            i,
+            true,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          mergeableBlock.count++;
+        }
+        mergeableBlock.startIndex = startingIndex;
+        mergeableBlock.endIndex = endingIndex;
+        tempInfo.splice(tempInfo.indexOf(neighborBlockToMerge), 1);
       }
     }
 
