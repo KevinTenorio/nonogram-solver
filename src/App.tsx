@@ -9,6 +9,7 @@ import hard2 from "./hard2.json";
 import specialist1 from "./specialist1.json";
 import specialist2 from "./specialist2.json";
 import specialist3 from "./specialist3.json";
+import bug from "./bug.json";
 import solveCellWithCheck from "./functions/solveCellWithCheck";
 import initializeSolveData from "./functions/initializeSolveData";
 import blockLineEdges from "./functions/blockLineEdges";
@@ -451,6 +452,19 @@ function App() {
           }}
         >
           Specialist 3
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...bug };
+            setSelectedDirection(example.selectedDirection as "row" | "column");
+            setSelectedIndex(example.selectedIndex);
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Bug
         </button>
       </div>
       <button

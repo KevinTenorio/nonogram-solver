@@ -30,6 +30,7 @@ const handleUnmergeableBlocks = (
   ) => void
 ) => {
   if (tempInfo.length > 0) {
+    let mergeable = 0;
     for (let i = 1; i < tempInfo.length; i++) {
       let canMerge = true;
       const mergedBlockSize =
@@ -52,36 +53,39 @@ const handleUnmergeableBlocks = (
         tempInfo[i].canMerge = false;
         tempInfo[i - 1].canMergeWithNext = false;
         tempInfo[i].canMergeWithPrev = false;
+      } else {
+        mergeable++;
       }
     }
-    for (let i = 0; i < tempInfo.length; i++) {
-      if (
-        tempInfo[i].canMerge === false &&
-        tempInfo.length === infoForIndex.length &&
-        infoForIndex[i].info === tempInfo[i].count
-      ) {
-        infoForIndex[i].isSolved = true;
-        infoForIndex[i].startIndex = tempInfo[i].startIndex;
-        infoForIndex[i].endIndex = tempInfo[i].endIndex;
-        tempInfo[i].isBlocked = true;
-        solveCellWithCheck(
-          solvedLineMap,
-          tempInfo[i].startIndex - 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
-        solveCellWithCheck(
-          solvedLineMap,
-          tempInfo[i].endIndex + 1,
-          false,
-          setIsSolving,
-          selectedIndex,
-          selectedDirection,
-          gridMap
-        );
+    if (tempInfo.length === infoForIndex.length && mergeable === 0) {
+      for (let i = 0; i < tempInfo.length; i++) {
+        if (
+          tempInfo[i].canMerge === false &&
+          infoForIndex[i].info === tempInfo[i].count
+        ) {
+          infoForIndex[i].isSolved = true;
+          infoForIndex[i].startIndex = tempInfo[i].startIndex;
+          infoForIndex[i].endIndex = tempInfo[i].endIndex;
+          tempInfo[i].isBlocked = true;
+          solveCellWithCheck(
+            solvedLineMap,
+            tempInfo[i].startIndex - 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+          solveCellWithCheck(
+            solvedLineMap,
+            tempInfo[i].endIndex + 1,
+            false,
+            setIsSolving,
+            selectedIndex,
+            selectedDirection,
+            gridMap
+          );
+        }
       }
     }
   }

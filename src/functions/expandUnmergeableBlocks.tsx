@@ -11,6 +11,8 @@ const expandUnmergeableBlocks = (
     startIndex: number;
     endIndex: number;
     canMerge?: boolean;
+    canMergeWithPrev?: boolean;
+    canMergeWithNext?: boolean;
     officialIndex?: number;
     targetCount?: number;
   }[],
@@ -30,6 +32,7 @@ const expandUnmergeableBlocks = (
 ) => {
   if (tempInfo.length > 0) {
     const firstTempBlock = tempInfo[0];
+    firstTempBlock.canMergeWithPrev = false;
     const firstInfoBlock = infoForIndex[0];
     let firstEmptyIndex = solvedLineMap.indexOf(null);
     if (firstInfoBlock.info! > firstTempBlock.startIndex - firstEmptyIndex) {
@@ -37,6 +40,7 @@ const expandUnmergeableBlocks = (
       firstTempBlock.targetCount = firstInfoBlock.info!;
     }
     const lastTempBlock = tempInfo[tempInfo.length - 1];
+    lastTempBlock.canMergeWithNext = false;
     const lastInfoBlock = infoForIndex[infoForIndex.length - 1];
     let lastEmptyIndex = solvedLineMap.lastIndexOf(null);
     if (lastInfoBlock.info! > lastEmptyIndex - lastTempBlock.endIndex) {
@@ -135,7 +139,9 @@ const expandUnmergeableBlocks = (
     }
     if (
       tempInfo.length === infoForIndex.length &&
-      !tempInfo.some((n) => n.canMerge !== false)
+      !tempInfo.some(
+        (n) => n.canMergeWithNext !== false || n.canMergeWithPrev !== false
+      )
     ) {
       for (let i = 0; i < tempInfo.length; i++) {
         tempInfo[i].officialIndex = i;
