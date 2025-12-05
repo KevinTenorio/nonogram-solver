@@ -28,6 +28,7 @@ import mergeBlocks from "./functions/mergeBlocks";
 import blockImpossibleCells from "./functions/blockImpossibleCells";
 import solveUnbrokenSpaces from "./functions/solveUnbrokenSpaces";
 import updateGridMap from "./functions/updateGridMap";
+import solveFromFalses from "./functions/solveFromFalses";
 
 function App() {
   const [gridSize, setGridSize] = useState(0);
@@ -207,6 +208,17 @@ function App() {
     );
 
     mergeBlocks(
+      solvedLineMap,
+      infoForIndex,
+      tempInfo,
+      setIsSolving,
+      selectedIndex,
+      selectedDirection,
+      gridMap,
+      solveCellWithCheck
+    );
+
+    solveFromFalses(
       solvedLineMap,
       infoForIndex,
       tempInfo,
