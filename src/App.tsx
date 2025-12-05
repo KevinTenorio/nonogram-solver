@@ -11,6 +11,7 @@ import specialist1 from "./specialist1.json";
 import specialist2 from "./specialist2.json";
 import specialist3 from "./specialist3.json";
 import specialist4 from "./specialist4.json";
+import specialist5 from "./specialist5.json";
 import solveCellWithCheck from "./functions/solveCellWithCheck";
 import initializeSolveData from "./functions/initializeSolveData";
 import blockLineEdges from "./functions/blockLineEdges";
@@ -491,6 +492,19 @@ function App() {
           }}
         >
           Specialist 4
+        </button>
+        <button
+          onClick={() => {
+            const example = { ...specialist5 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Specialist 5
         </button>
       </div>
       <button
