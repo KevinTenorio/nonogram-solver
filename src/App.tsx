@@ -6,10 +6,11 @@ import medium1 from "./medium1.json";
 import medium2 from "./medium2.json";
 import hard1 from "./hard1.json";
 import hard2 from "./hard2.json";
+import hard3 from "./hard3.json";
 import specialist1 from "./specialist1.json";
 import specialist2 from "./specialist2.json";
 import specialist3 from "./specialist3.json";
-import bug from "./bug.json";
+import specialist4 from "./specialist4.json";
 import solveCellWithCheck from "./functions/solveCellWithCheck";
 import initializeSolveData from "./functions/initializeSolveData";
 import blockLineEdges from "./functions/blockLineEdges";
@@ -428,6 +429,19 @@ function App() {
         </button>
         <button
           onClick={() => {
+            const example = { ...hard3 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
+            setGridSize(example.gridMap.length);
+            setRowInfo(example.rowInfo);
+            setColumnInfo(example.columnInfo);
+            setGridMap(example.gridMap);
+          }}
+        >
+          Hard 3
+        </button>
+        <button
+          onClick={() => {
             const example = { ...specialist1 };
             setSelectedDirection("row");
             setSelectedIndex(0);
@@ -467,16 +481,16 @@ function App() {
         </button>
         <button
           onClick={() => {
-            const example = { ...bug };
-            setSelectedDirection(example.selectedDirection as "row" | "column");
-            setSelectedIndex(example.selectedIndex);
+            const example = { ...specialist4 };
+            setSelectedDirection("row");
+            setSelectedIndex(0);
             setGridSize(example.gridMap.length);
             setRowInfo(example.rowInfo);
             setColumnInfo(example.columnInfo);
             setGridMap(example.gridMap);
           }}
         >
-          Bug
+          Specialist 4
         </button>
       </div>
       <button
